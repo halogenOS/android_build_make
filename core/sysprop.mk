@@ -280,6 +280,7 @@ $(gen_from_buildinfo_sh): $(INTERNAL_BUILD_ID_MAKEFILE) $(API_FINGERPRINT) | $(B
 	        TARGET_CPU_ABI="$(TARGET_CPU_ABI)" \
 	        TARGET_CPU_ABI2="$(TARGET_CPU_ABI2)" \
 	        CUSTOM_VENDOR_DIR="$(CUSTOM_VENDOR_DIR)" \
+	        $(PRODUCT_BUILD_PROP_OVERRIDES) \
 	        bash $(BUILDINFO_SH) > $@
 
 ifdef TARGET_SYSTEM_PROP
