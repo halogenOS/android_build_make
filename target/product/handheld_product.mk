@@ -29,7 +29,6 @@ PRODUCT_PACKAGES += \
     DeskClock \
     Email \
     Gallery2 \
-    LatinIME \
     Launcher3QuickStep \
     Music \
     OneTimeInitializer \
