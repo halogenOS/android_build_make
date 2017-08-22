@@ -174,8 +174,7 @@ all_product_configs := $(call get-product-makefiles,\
     $(SRC_TARGET_DIR)/product/AndroidProducts.mk)
 else
  ifneq ($(XOS_BUILD),)
-    $(call import-products, device/xos/$(XOS_BUILD)/XOS.mk)
-    all_product_configs := device/xos/$(XOS_BUILD)/XOS.mk
+    all_product_configs := $(shell find device -path "*/$(XOS_BUILD)/XOS.mk")
   else
     # Read in all of the product definitions specified by the AndroidProducts.mk
     # files in the tree.
