@@ -961,3 +961,6 @@ endif
 include $(BUILD_SYSTEM)/dumpvar.mk
 include $(BUILD_SYSTEM)/qcom_pathmap.mk
 include $(BUILD_SYSTEM)/qcom_target.mk
+
+# XOS common sepolicy
+include $(TOPDIR)external/xos/sepolicy/sepolicy.mk
