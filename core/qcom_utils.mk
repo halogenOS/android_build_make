@@ -139,6 +139,13 @@ $(strip \
 )
 endef
 
+# $(call is-qcom-hardware)
+# whether it uses a MSM/SDM chipset
+# If empty, then it's not qcom
+define is-qcom-hardware
+$(findstring msm,$(TARGET_BOARD_PLATFORM))$(findstring sdm,$(TARGET_BOARD_PLATFORM))
+endef
+
 # $(call is-chipset-in-board-platform,chipset)
 # does a prefix match of chipset in TARGET_BOARD_PLATFORM
 # uses underscore as a delimiter
