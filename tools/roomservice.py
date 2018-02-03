@@ -168,9 +168,9 @@ def add_to_manifest(repositories, fallback_branch = None):
             repo_target
         ))
         project = ElementTree.Element("project", attrib = { "path": repo_target,
-            "remote": repository['remote'] if "remote" in repository else "github",
+            "remote": repository['remote'] if "remote" in repository else "XOS",
             "name": repo_name if "remote" in repository \
-                              else ("halogenOS/%s" % repo_name) })
+                              else ("%s" % repo_name) })
 
         if 'branch' in repository:
             project.set('revision',repository['branch'])
@@ -237,9 +237,7 @@ else:
         repo_name = repository['name']
         if repo_name.startswith("android_device_") and repo_name.endswith("_" + device):
             print("Found repository: %s" % repository['name'])
-            
             manufacturer = repo_name.replace("android_device_", "").replace("_" + device, "")
-            
             default_revision = get_default_revision()
             print("Default revision: %s" % default_revision)
             print("Checking branch info")
@@ -252,10 +250,8 @@ else:
                 githubreq = urllib.request.Request(repository['tags_url'].replace('{/tag}', ''))
                 add_auth(githubreq)
                 result.extend (json.loads(urllib.request.urlopen(githubreq).read().decode()))
-            
             repo_path = "device/%s/%s" % (manufacturer, device)
             adding = {'repository':repo_name,'target_path':repo_path,'branch':default_revision}
-            
             fallback_branch = None
             if not has_branch(result, default_revision):
                 if os.getenv('ROOMSERVICE_BRANCHES'):
