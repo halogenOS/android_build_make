@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2012-2013, The CyanogenMod Project
-# Copyright (C) 2017, The halogenOS Project
+# Copyright (C) 2017-2018, The halogenOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -164,7 +164,7 @@ def add_to_manifest(repositories, fallback_branch = None):
             continue
 
         print('Adding dependency: %s -> %s' % (
-            ("halogenOS/%s" % repo_name) if "remote" in repository else repo_name,
+            ("halogenOS/%s" % repo_name) if not "remote" in repository else repo_name,
             repo_target
         ))
         project = ElementTree.Element("project", attrib = { "path": repo_target,
