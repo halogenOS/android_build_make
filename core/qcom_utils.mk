@@ -144,7 +144,7 @@ endef
 # whether it uses a MSM/SDM chipset
 # If empty, then it's not qcom
 define is-qcom-hardware
-$(findstring msm,$(TARGET_BOARD_PLATFORM))$(findstring sdm,$(TARGET_BOARD_PLATFORM))
+$(shell echo $(TARGET_BOARD_PLATFORM) | grep -i '\(msm\|sdm\).*')
 endef
 
 # $(call is-chipset-in-board-platform,chipset)
