@@ -418,6 +418,16 @@ def AddVBMeta(output_zip, boot_img_path, system_img_path, vendor_img_path,
   assert p.returncode == 0, "avbtool make_vbmeta_image failed"
   img.Write()
 
+def AddDisabledVBMeta(output_zip, prefix="IMAGES/"):
+  """Create a VBMeta image and store it in output_zip."""
+  img = OutputFile(output_zip, OPTIONS.input_tmp, prefix, "vbmeta.img")
+  avbtool = os.getenv('AVBTOOL') or OPTIONS.info_dict["avb_avbtool"]
+  cmd = [avbtool, "make_vbmeta_image", "--flag", "2", "--padding_size", "4096", "--output", img.name]
+
+  p = common.Run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  p.communicate()
+  assert p.returncode == 0, "avbtool make_vbmeta_image failed"
+  img.Write()
 
 def AddPartitionTable(output_zip, prefix="IMAGES/"):
   """Create a partition table image and store it in output_zip."""
@@ -639,6 +649,10 @@ def AddImagesToTargetFiles(filename):
     boot_contents = boot_image.WriteToTemp()
     AddVBMeta(output_zip, boot_contents.name, system_img_path,
               vendor_img_path, dtbo_img_path)
+
+  if OPTIONS.info_dict.get("avb_disabled_vbmeta") == "true":
+    banner("vbmeta")
+    AddDisabledVBMeta(output_zip)
 
   # For devices using A/B update, copy over images from RADIO/ and/or
   # VENDOR_IMAGES/ to IMAGES/ and make sure we have all the needed
