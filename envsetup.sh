@@ -21,6 +21,8 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 - sgrep:     Greps on all local source files.
 - godir:     Go to the directory containing a file.
 - pushboot:	 Push a file from your OUT dir to your phone and reboots it, using absolute path.
+- aospremote: Create 'aosp' remote for pwd
+- cafremote:  Create 'caf' remote for pwd
 
 Environment options:
 - SANITIZE_HOST: Set to 'true' to use ASAN for all host modules. Note that
@@ -786,6 +788,30 @@ function pushboot() {
 
     adb push $OUT/$* /$*
     adb reboot
+}
+
+function aospremote() {
+    if [[ ! -d .git ]]; then
+        echo "Not in a git dir"
+        return
+    fi
+    local PFX="https://android.googlesource.com/platform/"
+    local PROJECT=$(echo $(pwd) | sed -e "s#${ANDROID_BUILD_TOP}/##" -e "s/build\/make/build/")
+    git remote remove aosp 2>/dev/null
+    git remote add aosp $PFX$PROJECT
+    echo 'Remote aosp created'
+}
+
+function cafremote() {
+    if [[ ! -d .git ]]; then
+        echo "Not in a git dir"
+        return
+    fi
+    local PFX="https://source.codeaurora.org/quic/la/platform/"
+    local PROJECT=$(echo $(pwd) | sed -e "s#${ANDROID_BUILD_TOP}/##" -e "s/build\/make/build/" -e 's/qcom\/opensource/qcom-opensource/' -e 's/-caf.*//')
+    git remote remove caf 2>/dev/null
+    git remote add caf $PFX$PROJECT
+    echo 'Remote caf created'
 }
 
 function gettop
