@@ -960,7 +960,6 @@ include $(BUILD_SYSTEM)/soong_config.mk
 endif
 
 include $(BUILD_SYSTEM)/dumpvar.mk
-include $(BUILD_SYSTEM)/qcom_pathmap.mk
 include $(BUILD_SYSTEM)/qcom_target.mk
 
 # XOS common sepolicy
