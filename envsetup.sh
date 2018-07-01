@@ -1669,6 +1669,16 @@ else
 fi
 unset _xarray
 
+# determine whether arrays are zero-based (bash) or one-based (zsh)
+_xarray=(a b c)
+if [ -z "${_xarray[${#_xarray[@]}]}" ]
+then
+    _arrayoffset=1
+else
+    _arrayoffset=0
+fi
+unset _xarray
+
 # Execute the contents of any vendorsetup.sh files we can find.
 for f in `test -d device && find -L device -maxdepth 4 -name 'vendorsetup.sh' 2> /dev/null | sort` \
          `test -d vendor && find -L vendor -maxdepth 4 -name 'vendorsetup.sh' 2> /dev/null | sort` \
