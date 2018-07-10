@@ -617,6 +617,17 @@ function lunch()
         return 1
     fi
 
+    check_product $product
+    if [ $? -ne 0 ]
+    then
+        # if we can't find the product, try to grab it from our github
+        T=$(gettop)
+        pushd $T > /dev/null
+        build/make/tools/roomservice `echo "$product" | cut -d '_' -f2`
+        popd > /dev/null
+        check_product $product
+    fi
+
     TARGET_PRODUCT=$product \
     TARGET_BUILD_VARIANT=$variant \
     TARGET_PLATFORM_VERSION=$version \

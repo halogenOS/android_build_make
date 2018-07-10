@@ -1,0 +1,86 @@
+#!/bin/bash
+
+set -e
+
+rev="XOS-9.0"
+device="$1"
+
+GIT_URL="https://git.halogenos.org"
+GIT_ORG_URL="${GIT_URL}/halogenOS"
+DEVICES_FMT="${GIT_ORG_URL}/devices/raw/branch/%s/%s"
+
+broom=".repo/local_manifests/broom.xml"
+
+printf -v DEVICES_URL "$DEVICES_FMT" "$rev" "$device"
+
+echo "Device trees do not exist locally"
+echo "Attempting to retrieve them"
+echo
+
+
+for tool in jq xmlstarlet; do
+  if ! hash $tool; then
+    echo "Could not find $tool which is needed for roomservice to work"
+    echo "Please install it first, e. g. apt install $tool or pacman -S $tool"
+    exit 1
+  fi
+done
+
+if ! conf=`curl "$DEVICES_URL" 2>/dev/null`; then
+  echo "Can't find device $device"
+  exit 1
+fi
+
+if ! [ -f .repo/local_manifests/broom.xml ]; then
+  cp build/make/tools/broom.xml .repo/local_manifests/broom.xml
+fi
+
+
+declare -A repos="($( echo "$conf" | jq '.device.trees[] | "[" + .repo + "]=\"" + .path + "\""' -r))"
+declare -A reporevisions="($( echo "$conf" | jq '.device.trees[] | "[" + .repo + "]=\"" + .revision + "\""' -r))"
+
+for repo in ${!repos[@]}; do
+  path="${repos[$repo]}"
+  realrepo=""
+  if [[ "$repo" == *"://"* ]]; then
+    realrepo="$repo"
+  elif [[ "$repo" == "/" ]]; then
+    realrepo="${GIT_URL}/${repo}"
+  else
+    realrepo="${GIT_ORG_URL}/${repo}"
+  fi
+  echo "$realrepo -> $path"
+  remotepart=`echo "$realrepo" | sed -re 's/(.+?:\/\/.[^/]+?\/)(.+)/\1/'`
+  pathpart=`echo "$realrepo" | sed -re 's/(.+?:\/\/.[^/]+?\/)(.+)/\2/'`
+  remotepart_hash=`echo "$remotepart" | md5sum | cut -d ' ' -f1`
+
+  if [ -z `xmlstarlet sel -t -v  "/manifest/remote[@name='$remotepart_hash']/@name" $broom` ]; then
+    xmlstarlet ed --inplace -s '/manifest' \
+                            -t 'elem' -n 'remote' -v '' \
+                            -i '/manifest/remote[not(@name)]' \
+                            -t 'attr' -n 'fetch' -v "$remotepart" \
+                            -i '/manifest/remote[not(@name)]' \
+                            -t 'attr' -n 'name' -v "$remotepart_hash" $broom
+  fi
+
+  revision="${reporevisions[$repo]}"
+  if [ -z "$revision" ]; then
+    revision="$rev"
+  fi
+
+  if [ -z `xmlstarlet sel -t -v "/manifest/project[@name='$pathpart'][@path='$path'][@remote='$remotepart_hash'][@revision='$revision']/@name" $broom` ]; then
+    xmlstarlet ed --inplace -s '/manifest' \
+                            -t 'elem' -n 'project' -v '' \
+                            -i '/manifest/project[not(@name)]' \
+                            -t 'attr' -n 'path' -v "$path" \
+                            -i '/manifest/project[not(@name)]' \
+                            -t 'attr' -n 'revision' -v "$revision" \
+                            -i '/manifest/project[not(@name)]' \
+                            -t 'attr' -n 'remote' -v "$remotepart_hash" \
+                            -i '/manifest/project[not(@name)]' \
+                            -t 'attr' -n 'name' -v "$pathpart" $broom
+  fi
+
+  repo sync -j1 --force-sync --no-clone-bundle --no-tags -c -f "$path"
+
+done
