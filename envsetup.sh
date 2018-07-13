@@ -666,7 +666,7 @@ function lunch()
         # if we can't find the product, try to grab it from our github
         T=$(gettop)
         pushd $T > /dev/null
-        build/make/tools/roomservice $product
+        build/make/tools/roomservice `echo "$product" | cut -d '_' -f2`
         popd > /dev/null
         check_product $product
     fi
