@@ -37,6 +37,7 @@ fi
 
 
 declare -A repos="($( echo "$conf" | jq '.device.trees[] | "[" + .repo + "]=\"" + .path + "\""' -r))"
+declare -A reporevisions="($( echo "$conf" | jq '.device.trees[] | "[" + .repo + "]=\"" + .revision + "\""' -r))"
 
 for repo in ${!repos[@]}; do
   path="${repos[$repo]}"
@@ -62,7 +63,11 @@ for repo in ${!repos[@]}; do
                             -t 'attr' -n 'name' -v "$remotepart_hash" $broom
   fi
 
-  revision="$rev"
+  revision="${reporevisions[$repo]}"
+  if [ -z "$revision" ]; then
+    revision="$rev"
+  fi
+
   if [ -z `xmlstarlet sel -t -v "/manifest/project[@name='$pathpart'][@path='$path'][@remote='$remotepart_hash'][@revision='$revision']/@name" $broom` ]; then
     xmlstarlet ed --inplace -s '/manifest' \
                             -t 'elem' -n 'project' -v '' \
