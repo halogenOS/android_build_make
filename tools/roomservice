@@ -32,6 +32,7 @@ if ! conf=`curl "$DEVICES_URL" 2>/dev/null`; then
 fi
 
 if ! [ -f .repo/local_manifests/broom.xml ]; then
+  mkdir -p .repo/local_manifests
   cp build/make/tools/broom.xml .repo/local_manifests/broom.xml
 fi
 
