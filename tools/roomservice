@@ -21,7 +21,11 @@ echo
 for tool in jq xmlstarlet; do
   if ! hash $tool; then
     echo "Could not find $tool which is needed for roomservice to work"
-    echo "Please install it first, e. g. apt install $tool or pacman -S $tool"
+    echo "Please install it first."
+    echo
+    echo "Debian/Ubuntu/Mint: sudo apt install $tool"
+    echo "Arch Linux: sudo pacman -S $tool"
+    echo
     exit 1
   fi
 done
