@@ -608,7 +608,7 @@ DEFAULT_KEY_CERT_PAIR := $(DEFAULT_SYSTEM_DEV_CERTIFICATE)
 # Rules that need to be present for the all targets, even
 # if they don't do anything.
 .PHONY: systemimage
-systemimage:
+systemimage: host-flex-binary
 
 # -----------------------------------------------------------------
 
