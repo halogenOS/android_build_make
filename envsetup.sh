@@ -1703,3 +1703,5 @@ unset f
 addcompletions
 
 export ANDROID_BUILD_TOP=$(gettop)
+
+source $ANDROID_BUILD_TOP/external/xos/xostools/xostools.sh
