@@ -965,6 +965,34 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   # Dump fingerprints
   script.Print("Target: {}".format(target_info.fingerprint))
 
+  android_version = target_info.GetBuildProp("ro.build.version.release")
+  build_id = target_info.GetBuildProp("ro.build.id")
+  build_date = target_info.GetBuildProp("ro.build.date")
+  security_patch = target_info.GetBuildProp("ro.build.version.security_patch")
+  device = target_info.GetBuildProp("ro.product.device")
+
+  script.Print("  ____________________________________  ");
+  script.Print(" |                                    | ");
+  script.Print(" |      Thanks a lot for choosing     | ");
+  script.Print(" |                                    | ");
+  script.Print(" | Y88b   d88P  .d88888b.   .d8888b.  | ");
+  script.Print(" |  Y88b d88P  d88P' 'Y88b d88P  Y88b | ");
+  script.Print(" |   Y88o88P   888     888 Y88b.      | ");
+  script.Print(" |    Y888P    888     888  'Y888b.   | ");
+  script.Print(" |    d888b    888     888     'Y88b. | ");
+  script.Print(" |   d88888b   888     888       '888 | ");
+  script.Print(" |  d88P Y88b  Y88b. .d88P Y88b  d88P | ");
+  script.Print(" | d88P   Y88b  'Y88888P'   'Y8888P'  | ");
+  script.Print(" |                                    | ");
+  script.Print(" |   We believe that you'll love it!  | ");
+  script.Print(" |____________________________________| ");
+  script.Print(" Android version: %s"%(android_version));
+  script.Print(" Build id: %s"%(build_id));
+  script.Print(" Build date: %s"%(build_date));
+  script.Print(" Security patch: %s"%(security_patch));
+  script.Print(" Device: %s"%(device));
+  script.Print(" ______________________________________");
+
   device_specific.FullOTA_InstallBegin()
 
   CopyInstallTools(output_zip)
