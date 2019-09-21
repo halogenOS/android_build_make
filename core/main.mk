@@ -35,7 +35,6 @@ PWD := $(shell pwd)
 
 TOP := .
 TOPDIR :=
-CUSTOM_VENDOR_DIR := $(TOPDIR)vendor/aosp
 
 # This is the default target.  It must be the first declared target.
 .PHONY: droid

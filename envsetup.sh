@@ -1621,4 +1621,6 @@ addcompletions
 
 export ANDROID_BUILD_TOP=$(gettop)
 
-. $ANDROID_BUILD_TOP/vendor/aosp/build/envsetup.sh
+export CUSTOM_VENDOR_DIR=${ANDROID_BUILD_TOP}/vendor/aosp
+
+. $CUSTOM_VENDOR_DIR/build/envsetup.sh
