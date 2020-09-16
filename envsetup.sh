@@ -1602,3 +1602,9 @@ function source_vendorsetup() {
 validate_current_shell
 source_vendorsetup
 addcompletions
+
+XOS_TOOLS_SCRIPT="external/xos/xostools/xostools.sh"
+if [ -f $XOS_TOOLS_SCRIPT ]; then
+    source $XOS_TOOLS_SCRIPT
+fi
+
