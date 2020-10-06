@@ -663,13 +663,13 @@ function lunch()
         # if we can't find a product, try to grab it off a git server
         T=$(gettop)
         cd $T > /dev/null
-        vendor/aosp/build/tools/roomservice.py $product
+        $CUSTOM_VENDOR_DIR/build/tools/roomservice.py $product
         cd - > /dev/null
         check_product $product
     else
         T=$(gettop)
         cd $T > /dev/null
-        vendor/aosp/build/tools/roomservice.py $product true
+        $CUSTOM_VENDOR_DIR/build/tools/roomservice.py $product true
         cd - > /dev/null
     fi
 

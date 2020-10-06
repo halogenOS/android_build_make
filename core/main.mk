@@ -363,7 +363,7 @@ ADDITIONAL_BUILD_PROPERTIES += net.bt.name=Android
 
 # ------------------------------------------------------------
 # Include vendor specific additions to build properties
--include vendor/aosp/build/core/main.mk
+-include $(CUSTOM_VENDOR_DIR)/build/core/main.mk
 
 # ------------------------------------------------------------
 # Define a function that, given a list of module tags, returns
