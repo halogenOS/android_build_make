@@ -140,7 +140,7 @@ function check_product()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    if (echo -n $1 | grep -q -e "^custom_") ; then
+    if (echo -n $1 | grep -q -e "^aosp_") ; then
         CUSTOM_BUILD=$(echo -n $1 | sed -e 's/^aosp_//g')
     else
         CUSTOM_BUILD=
