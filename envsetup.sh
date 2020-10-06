@@ -50,6 +50,8 @@ EOF
     echo $A
 }
 
+export CUSTOM_VENDOR_DIR="vendor/aosp"
+
 # Get all the build variables needed by this script in a single call to the build system.
 function build_build_var_cache()
 {
@@ -1638,6 +1640,7 @@ addcompletions
 
 export ANDROID_BUILD_TOP=$(gettop)
 
+export CUSTOM_VENDOR_DIR_ABS="$ANDROID_BUILD_TOP/$CUSTOM_VENDOR_DIR"
 XOS_TOOLS_SCRIPT="external/xos/xostools/xostools.sh"
 if [ -f $XOS_TOOLS_SCRIPT ]; then
     source $XOS_TOOLS_SCRIPT
