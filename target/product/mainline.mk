@@ -38,7 +38,6 @@ $(call inherit-product, frameworks/base/data/sounds/AudioPackage14.mk)
 endif
 
 PRODUCT_PACKAGES += \
-    PhotoTable \
     WallpaperPicker \
 
 ifeq ($(CUSTOM_BUILD),)
