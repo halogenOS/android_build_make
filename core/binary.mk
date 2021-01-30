@@ -64,6 +64,7 @@ endif
 ifneq (,$(findstring $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr,$(LOCAL_ADDITIONAL_DEPENDENCIES)))
   LOCAL_ADDITIONAL_DEPENDENCIES := $(patsubst $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr,,$(LOCAL_ADDITIONAL_DEPENDENCIES))
 endif
+endif
 
 # Replace device_kernel_headers with generated_kernel_headers
 ifneq (,$(findstring device_kernel_headers,$(LOCAL_HEADER_LIBRARIES)))
