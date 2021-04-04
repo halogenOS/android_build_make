@@ -84,6 +84,9 @@ my_export_c_include_dirs := $(LOCAL_EXPORT_C_INCLUDE_DIRS)
 my_export_c_include_deps := $(LOCAL_EXPORT_C_INCLUDE_DEPS)
 my_arflags :=
 
+ifneq ($(CLANG_TIDY_ENABLE),true)
+  my_tidy_enabled := false
+else
 # Disable clang-tidy if it is not found.
 ifeq ($(PATH_TO_CLANG_TIDY),)
   my_tidy_enabled := false
@@ -93,6 +96,7 @@ else
   ifeq ($(my_tidy_enabled),)
     my_tidy_enabled := $(WITH_TIDY)
   endif
+endif
 endif
 
 # my_tidy_checks is empty if clang-tidy is disabled.
