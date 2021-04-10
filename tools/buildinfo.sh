@@ -56,6 +56,7 @@ if [ -n "$BUILD_THUMBPRINT" ] ; then
 fi
 
 echo "ro.custom.device=$CUSTOM_DEVICE"
+echo "ro.custom.build.version.sp=$PLATFORM_SECURITY_PATCH"
 
 echo "# end build properties"
 
