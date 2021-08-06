@@ -1,3 +1,12 @@
+if [[ $(whoami) == root ]] && [[ $USE_ROOT_ANYWAY != true ]]; then
+    echo " -= ROOT USER DETECTED =-"
+    echo "Using root is discouraged and possibly dangerous, especially when building on baremetal."
+    echo "Please consider using a separate user for this."
+    echo
+    echo "If you want to use root anyway, set USE_ROOT_ANYWAY to true in your environment."
+    return 1
+fi
+
 function hmm() {
 cat <<EOF
 
