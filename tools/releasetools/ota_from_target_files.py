@@ -627,8 +627,8 @@ def CheckVintfIfTrebleEnabled(target_files, target_info):
     return
 
   if not check_target_files_vintf.CheckVintf(target_files, target_info):
-    logger.warning("VINTF compatibility check failed")
-    return
+    raise RuntimeError("VINTF compatibility check failed")
+
 
 def GetBlockDifferences(target_zip, source_zip, target_info, source_info,
                         device_specific):
