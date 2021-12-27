@@ -51,7 +51,7 @@ PRODUCT_VENDOR_PROPERTIES := \
 PRODUCT_LOCALES := en_US
 
 # Get some sounds
-ifeq ($(POTATO_BUILD),)
+ifeq ($(CUSTOM_BUILD),)
 $(call inherit-product-if-exists, frameworks/base/data/sounds/AllAudio.mk)
 else
 $(call inherit-product-if-exists, frameworks/base/data/sounds/AudioPackage14.mk)
