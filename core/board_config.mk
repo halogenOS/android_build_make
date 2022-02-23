@@ -186,6 +186,12 @@ endif
 
 include $(board_config_mk)
 
+ifneq ($(CUSTOM_BUILD),)
+include $(CUSTOM_VENDOR_DIR)/config/BoardConfigCustom.mk
+else
+$(shell echo This is not a custom build because CUSTOM_BUILD is not defined >&2)
+endif
+
 ifneq (,$(and $(TARGET_ARCH),$(TARGET_ARCH_SUITE)))
   $(error $(board_config_mk) erroneously sets both TARGET_ARCH and TARGET_ARCH_SUITE)
 endif
