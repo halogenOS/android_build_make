@@ -153,10 +153,11 @@ function check_product()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    if (echo -n $1 | grep -q -e "^custom_") ; then
-        CUSTOM_BUILD=$(echo -n $1 | sed -e 's/^custom_//g')
+    if (echo -n $1 | grep -q -e "_") ; then
+        CUSTOM_BUILD=$(echo -n $1 | cut -d '_' -f2-)
     else
-        CUSTOM_BUILD=
+        echo "$1 is not a valid product name"
+        return
     fi
     export CUSTOM_BUILD
 
