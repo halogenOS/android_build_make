@@ -61,6 +61,8 @@ ifeq (aosp_arm64,$(TARGET_PRODUCT))
 $(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_release.mk)
 endif
 
+# Inherit custom common configuration
+$(call inherit-product-if-exists, $(CUSTOM_VENDOR_DIR)/config/common.mk)
 
 PRODUCT_NAME := aosp_arm64
 PRODUCT_DEVICE := generic_arm64

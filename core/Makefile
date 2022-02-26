@@ -1890,6 +1890,8 @@ ifdef BUILDING_RECOVERY_IMAGE
 
 INTERNAL_RECOVERYIMAGE_FILES := $(filter $(TARGET_RECOVERY_OUT)/%, \
     $(ALL_DEFAULT_INSTALLED_MODULES))
+INTERNAL_RECOVERYIMAGE_FILES += $(filter $(PRODUCT_OUT)/install/%, \
+    $(ALL_DEFAULT_INSTALLED_MODULES))
 
 INSTALLED_FILES_FILE_RECOVERY := $(PRODUCT_OUT)/installed-files-recovery.txt
 INSTALLED_FILES_JSON_RECOVERY := $(INSTALLED_FILES_FILE_RECOVERY:.txt=.json)
@@ -4564,7 +4566,6 @@ endif
 ifdef BOARD_GKI_SIGNING_SIGNATURE_ARGS
 	$(hide) echo 'gki_signing_signature_args=$(BOARD_GKI_SIGNING_SIGNATURE_ARGS)' >> $@
 endif
-	$(hide) echo "use_set_metadata=1" >> $@
 	$(hide) echo "multistage_support=1" >> $@
 	$(hide) echo "blockimgdiff_versions=3,4" >> $@
 ifeq ($(PRODUCT_BUILD_GENERIC_OTA_PACKAGE),true)
@@ -5262,6 +5263,7 @@ endif
 ifdef BOARD_PREBUILT_VENDORIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
 	$(hide) cp $(INSTALLED_VENDORIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) echo "board_prebuilt_vendor_image=true" >> $(zip_root)/META/misc_info.txt
 endif
 ifdef BOARD_PREBUILT_PRODUCTIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
@@ -5285,6 +5287,7 @@ endif # BOARD_PREBUILT_BOOTIMAGE
 ifdef BOARD_PREBUILT_ODMIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
 	$(hide) cp $(INSTALLED_ODMIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) echo "board_prebuilt_odm_image=true" >> $(zip_root)/META/misc_info.txt
 endif
 ifdef BOARD_PREBUILT_VENDOR_DLKMIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES

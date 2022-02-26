@@ -31,6 +31,9 @@ endif
 #
 $(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system.mk)
 
+# Inherit custom common configuration
+$(call inherit-product-if-exists, $(CUSTOM_VENDOR_DIR)/config/common.mk)
+
 #
 # All components inherited here go to system_ext image
 #
