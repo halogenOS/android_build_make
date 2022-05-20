@@ -59,4 +59,4 @@ echo "ro.custom.device=$CUSTOM_DEVICE"
 
 echo "# end build properties"
 
-VEN_INFO=$CUSTOM_VENDOR_DIR/build/tools/buildinfo.sh && test -f $VEN_INFO && source $VEN_INFO
+VEN_INFO=$CUSTOM_VENDOR_DIR/build/tools/buildinfo.sh && test -f $VEN_INFO && source $VEN_INFO || true
