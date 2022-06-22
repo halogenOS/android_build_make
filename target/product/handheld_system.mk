@@ -90,3 +90,6 @@ PRODUCT_VENDOR_PROPERTIES := \
     ro.config.alarm_alert?=Alarm_Classic.ogg
 endif
 
+# Traceur for debug only
+PRODUCT_PACKAGES_ENG += \
+    Traceur
