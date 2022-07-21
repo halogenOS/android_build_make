@@ -57,6 +57,7 @@ fi
 
 echo "ro.custom.device=$CUSTOM_DEVICE"
 echo "ro.custom.build.version.sp=$PLATFORM_SECURITY_PATCH"
+echo "ro.custom.build.device.maintainer=$DEVICE_MAINTAINER"
 
 echo "# end build properties"
 
