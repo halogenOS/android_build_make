@@ -265,7 +265,7 @@ class EdifyGenerator(object):
     self.script.append('ui_print("%s");' % (message,))
 
   def PrintCustomBanner(self, android_version, build_id, build_date,
-                                  security_patch, device):
+                                  security_patch, real_security_patch, device):
     self.Print("----------------------------------------------")
     self.Print("              Welcome to halogenOS!")
     self.Print(" Prepare for test flight, and expect crashes!")
@@ -274,7 +274,8 @@ class EdifyGenerator(object):
     self.Print(" Android Version: %s"%(android_version))
     self.Print(" Build ID:        %s"%(build_id))
     self.Print(" Build Date:      %s"%(build_date))
-    self.Print(" ASB:             %s"%(security_patch))
+    self.Print(" SP:              %s"%(security_patch))
+    self.Print(" ASP:             %s"%(real_security_patch))
     self.Print(" Codename:        %s"%(device))
     self.Print("----------------------------------------------")
 
