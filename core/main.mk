@@ -468,6 +468,8 @@ ADDITIONAL_SYSTEM_PROPERTIES += net.bt.name=Android
 # This property is set by flashing debug boot image, so default to false.
 ADDITIONAL_SYSTEM_PROPERTIES += ro.force.debuggable=0
 
+include $(CUSTOM_PRODUCT_DIR)/build/core/main.mk
+
 # ------------------------------------------------------------
 # Define a function that, given a list of module tags, returns
 # non-empty if that module should be installed in /system.
