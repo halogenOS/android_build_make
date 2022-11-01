@@ -458,6 +458,8 @@ endif
 # See envsetup.mk for a description of SCAN_EXCLUDE_DIRS
 FIND_LEAVES_EXCLUDES := $(addprefix --prune=, $(SCAN_EXCLUDE_DIRS) .repo .git)
 
+include $(CUSTOM_PRODUCT_DIR)/config/BoardConfigCustom.mk
+
 # The build system exposes several variables for where to find the kernel
 # headers:
 #   TARGET_DEVICE_KERNEL_HEADERS is automatically created for the current
@@ -1310,6 +1312,9 @@ endif
 
 SOONG_VARIABLES := $(SOONG_OUT_DIR)/soong.$(TARGET_PRODUCT)$(COVERAGE_SUFFIX).variables
 SOONG_EXTRA_VARIABLES := $(SOONG_OUT_DIR)/soong.$(TARGET_PRODUCT)$(COVERAGE_SUFFIX).extra.variables
+
+-include device/lineage/sepolicy/common/sepolicy.mk
+-include device/custom/sepolicy/common/sepolicy.mk
 
 ifeq ($(CALLED_FROM_SETUP),true)
 include $(BUILD_SYSTEM)/ninja_config.mk
