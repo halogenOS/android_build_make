@@ -208,6 +208,8 @@ endif
 
 BUILD_WITHOUT_PV := true
 
+include $(CUSTOM_PRODUCT_DIR)/build/core/main.mk
+
 # ------------------------------------------------------------
 # Define a function that, given a list of module tags, returns
 # non-empty if that module should be installed in /system.
