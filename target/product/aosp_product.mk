@@ -35,7 +35,9 @@ PRODUCT_PACKAGES += \
     preinstalled-packages-platform-aosp-product.xml \
     WallpaperPicker \
 
+ifneq ($(CUSTOM_PRODUCT_DIR),)
 # Telephony:
 #   Provide a APN configuration to GSI product
 PRODUCT_COPY_FILES += \
     device/sample/etc/apns-full-conf.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/apns-conf.xml
+endif
