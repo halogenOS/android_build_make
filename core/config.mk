@@ -1295,6 +1295,9 @@ dont_bother_goals := out product-graph
 # consistency with those defined in BoardConfig.mk files.
 include $(BUILD_SYSTEM)/android_soong_config_vars.mk
 
+-include device/lineage/sepolicy/common/sepolicy.mk
+-include device/custom/sepolicy/common/sepolicy.mk
+
 ifeq ($(CALLED_FROM_SETUP),true)
 include $(BUILD_SYSTEM)/ninja_config.mk
 include $(BUILD_SYSTEM)/soong_config.mk
