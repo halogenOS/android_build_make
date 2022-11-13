@@ -1274,4 +1274,6 @@ endif
 DEFAULT_DATA_OUT_MODULES := ltp $(ltp_packages) $(kselftest_modules)
 .KATI_READONLY := DEFAULT_DATA_OUT_MODULES
 
+include $(CUSTOM_PRODUCT_DIR)/build/core/config.mk
+
 include $(BUILD_SYSTEM)/dumpvar.mk
