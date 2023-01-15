@@ -200,6 +200,7 @@ annotation_processor_deps :=
 annotation_processor_jars :=
 
 # If error prone is enabled then add LOCAL_ERROR_PRONE_FLAGS to LOCAL_JAVACFLAGS
+RUN_ERROR_PRONE := false
 ifeq ($(RUN_ERROR_PRONE),true)
 annotation_processor_jars += $(ERROR_PRONE_JARS)
 LOCAL_JAVACFLAGS += $(ERROR_PRONE_FLAGS)
