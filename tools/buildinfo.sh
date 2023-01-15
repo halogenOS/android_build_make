@@ -54,4 +54,10 @@ if [ -n "$BUILD_THUMBPRINT" ] ; then
   echo "ro.build.thumbprint=$BUILD_THUMBPRINT"
 fi
 
+product_buildinfo="$ANDROID_BUILD_TOP/$CUSTOM_PRODUCT_DIR/tools/buildinfo.sh"
+if [ -f "$product_buildinfo" ] ; then
+  echo "# Product buildinfo.sh"
+  source "$product_buildinfo"
+fi
+
 echo "# end build properties"
