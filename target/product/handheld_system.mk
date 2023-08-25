@@ -67,7 +67,6 @@ PRODUCT_PACKAGES += \
     SharedStorageBackup \
     SimAppDialog \
     Telecom \
-    TeleService \
     UserDictionaryProvider \
     VpnDialogs \
     vr \
