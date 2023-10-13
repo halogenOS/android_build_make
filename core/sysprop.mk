@@ -24,6 +24,9 @@ ifeq ($(BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED), true)
 endif
 
 BUILDINFO_SH := build/make/tools/buildinfo.sh
+ifneq ($(CUSTOM_PRODUCT_DIR),)
+PRODUCT_BUILDINFO_SH := $(CUSTOM_PRODUCT_DIR)/tools/buildinfo.sh
+endif
 POST_PROCESS_PROPS := $(HOST_OUT_EXECUTABLES)/post_process_props$(HOST_EXECUTABLE_SUFFIX)
 
 # Emits a set of sysprops common to all partitions to a file.
@@ -300,6 +303,11 @@ $(gen_from_buildinfo_sh): $(INTERNAL_BUILD_ID_MAKEFILE) $(API_FINGERPRINT) | $(B
 	        CUSTOM_PRODUCT_DIR="$(CUSTOM_PRODUCT_DIR)" \
 		    DEVICE_MAINTAINER="$(DEVICE_MAINTAINER)" \
             VENDOR_SECURITY_PATCH="$(VENDOR_SECURITY_PATCH)" \
+            CUSTOM_DEVICE="$(CUSTOM_DEVICE)" \
+            CUSTOM_PRODUCT_NAME="$(CUSTOM_PRODUCT_NAME)" \
+            CUSTOM_PLATFORM_VERSION="$(CUSTOM_PLATFORM_VERSION)" \
+            CUSTOM_BUILD_TYPE="$(CUSTOM_BUILD_TYPE)" \
+            DEVICE_MAINTAINER="$(DEVICE_MAINTAINER)" \
 	        $(PRODUCT_BUILD_PROP_OVERRIDES) \
 	        bash $(BUILDINFO_SH) > $@
 
