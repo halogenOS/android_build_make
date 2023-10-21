@@ -54,6 +54,10 @@ if [ -n "$BUILD_THUMBPRINT" ] ; then
   echo "ro.build.thumbprint=$BUILD_THUMBPRINT"
 fi
 
+echo "ro.custom.device=$CUSTOM_DEVICE"
+echo "ro.custom.build.version.sp=$PLATFORM_SECURITY_PATCH"
+echo "ro.custom.build.device.maintainer=$DEVICE_MAINTAINER"
+
 product_buildinfo="$ANDROID_BUILD_TOP/$CUSTOM_PRODUCT_DIR/tools/buildinfo.sh"
 if [ -f "$product_buildinfo" ] ; then
   echo "Using product buildinfo $product_buildinfo" >&2
