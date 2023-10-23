@@ -624,13 +624,32 @@ endif
 _has_boot_img_artifact :=
 
 # Are we building a userdata image
-BUILDING_USERDATA_IMAGE :=
-ifeq ($(PRODUCT_BUILD_USERDATA_IMAGE),)
+ifndef TARGET_BUILD_USERDATA_IMAGE
+TARGET_BUILD_USERDATA_IMAGE := $(PRODUCT_BUILD_USERDATA_IMAGE)
+endif
+BUILDING_USERDATA_IMAGE := $(TARGET_BUILD_USERDATA_IMAGE)
+ifeq ($(BUILDING_USERDATA_IMAGE),)
   ifdef BOARD_USERDATAIMAGE_PARTITION_SIZE
-    BUILDING_USERDATA_IMAGE := true
+    # The reason we don't do this automatically is because it would deviate from the behavior we used to have
+    # This is very explicit and makes the builder aware of the situation.
+    $(shell echo "*************************************** PROBLEM **********************************************" >&2)
+    $(shell echo "* Setting BOARD_USERDATAIMAGE_PARTITION_SIZE without setting TARGET_BUILD_USERDATA_IMAGE     *" >&2)
+    $(shell echo "* is a bad idea. This is a hard error for the simple reason that setting this variable       *" >&2)
+    $(shell echo "* would automatically also set BUILDING_USERDATA_IMAGE which means that userdata.img will    *" >&2)
+    $(shell echo "* be created. If you are sure you want to later compress 108G of literal waste, proceed      *" >&2)
+    $(shell echo "* with also setting TARGET_BUILD_USERDATA_IMAGE := true.                                     *" >&2)
+    $(shell echo -e \
+                "* \e[1mOtherwise, to fix this error set TARGET_BUILD_USERDATA_IMAGE := false in your BoardConfig " \
+                "\e[0m*" >&2)
+    $(shell echo -e \
+                "* \e[1mor remove the line that starts with BOARD_USERDATAIMAGE_PARTITION_SIZE :=                 " \
+                "\e[0m*" >&2)
+    $(shell echo "**********************************************************************************************" >&2)
+    $(shell echo >&2)
+    $(error BOARD_USERDATAIMAGE_PARTITION_SIZE is set but TARGET_BUILD_USERDATA_IMAGE is not. Thank me later)
+  else
+    BUILDING_USERDATA_IMAGE := false
   endif
-else ifeq ($(PRODUCT_BUILD_USERDATA_IMAGE),true)
-  BUILDING_USERDATA_IMAGE := true
 endif
 .KATI_READONLY := BUILDING_USERDATA_IMAGE
 
