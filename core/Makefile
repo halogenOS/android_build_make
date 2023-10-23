@@ -2099,7 +2099,7 @@ endif
 ifdef BUILDING_SYSTEM_OTHER_IMAGE
   PROP_DICTIONARY_IMAGES += system_other
 endif
-ifdef BUILDING_USERDATA_IMAGE
+ifeq ($(BUILDING_USERDATA_IMAGE),true)
   PROP_DICTIONARY_IMAGES += userdata
 endif
 ifdef BUILDING_VENDOR_IMAGE
@@ -3335,7 +3335,7 @@ INSTALLED_FILES_OUTSIDE_IMAGES := $(filter-out $(TARGET_OUT_DATA)/%, $(INSTALLED
 INTERNAL_USERDATAIMAGE_FILES := \
     $(filter $(TARGET_OUT_DATA)/%,$(ALL_DEFAULT_INSTALLED_MODULES))
 
-ifdef BUILDING_USERDATA_IMAGE
+ifeq ($(BUILDING_USERDATA_IMAGE),true)
 userdataimage_intermediates := \
     $(call intermediates-dir-for,PACKAGING,userdata)
 BUILT_USERDATAIMAGE_TARGET := $(PRODUCT_OUT)/userdata.img
@@ -5753,7 +5753,7 @@ else
   $(BUILT_TARGET_FILES_PACKAGE): $(INSTALLED_BUILD_PROP_TARGET)
 endif
 
-ifdef BUILDING_USERDATA_IMAGE
+ifeq ($(BUILDING_USERDATA_IMAGE),true)
   $(BUILT_TARGET_FILES_PACKAGE): $(INTERNAL_USERDATAIMAGE_FILES)
 endif
 
@@ -6035,7 +6035,7 @@ else ifdef INSTALLED_BUILD_PROP_TARGET
 	$(hide) mkdir -p "$(zip_root)/SYSTEM"
 	$(hide) cp "$(INSTALLED_BUILD_PROP_TARGET)" "$(patsubst $(TARGET_OUT)/%,$(zip_root)/SYSTEM/%,$(INSTALLED_BUILD_PROP_TARGET))"
 endif
-ifdef BUILDING_USERDATA_IMAGE
+ifeq ($(BUILDING_USERDATA_IMAGE),true)
 	@# Contents of the data image
 	$(hide) $(call package_files-copy-root, \
 	    $(TARGET_OUT_DATA),$(zip_root)/DATA)

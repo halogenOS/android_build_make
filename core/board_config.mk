@@ -627,8 +627,7 @@ _has_boot_img_artifact :=
 ifndef TARGET_BUILD_USERDATA_IMAGE
 TARGET_BUILD_USERDATA_IMAGE := $(PRODUCT_BUILD_USERDATA_IMAGE)
 endif
-BUILDING_USERDATA_IMAGE := $(TARGET_BUILD_USERDATA_IMAGE)
-ifeq ($(BUILDING_USERDATA_IMAGE),)
+ifeq ($(TARGET_BUILD_USERDATA_IMAGE),)
   ifdef BOARD_USERDATAIMAGE_PARTITION_SIZE
     # The reason we don't do this automatically is because it would deviate from the behavior we used to have
     # This is very explicit and makes the builder aware of the situation.
@@ -647,9 +646,9 @@ ifeq ($(BUILDING_USERDATA_IMAGE),)
     $(shell echo "**********************************************************************************************" >&2)
     $(shell echo >&2)
     $(error BOARD_USERDATAIMAGE_PARTITION_SIZE is set but TARGET_BUILD_USERDATA_IMAGE is not. Thank me later)
-  else
-    BUILDING_USERDATA_IMAGE := false
   endif
+else
+  BUILDING_USERDATA_IMAGE := $(TARGET_BUILD_USERDATA_IMAGE)
 endif
 .KATI_READONLY := BUILDING_USERDATA_IMAGE
 
