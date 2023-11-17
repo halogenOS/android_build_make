@@ -652,6 +652,7 @@ ifeq ($(BUILDING_USERDATA_IMAGE),)
     BUILDING_USERDATA_IMAGE := false
   endif
 endif
+BUILDING_USERDATA_IMAGE ?=
 .KATI_READONLY := BUILDING_USERDATA_IMAGE
 
 # Are we building a vbmeta image
