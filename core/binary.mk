@@ -7,6 +7,7 @@
 
 #######################################
 include $(BUILD_SYSTEM)/base_rules.mk
+include $(BUILD_SYSTEM)/use_lld_setup.mk
 #######################################
 
 ##################################################
@@ -42,6 +43,33 @@ ifneq ($(filter external/% hardware/% vendor/%,$(LOCAL_PATH)),)
 endif
 
 my_soong_problems :=
+
+# Automatically replace the old-style kernel header include with a dependency
+# on the generated_kernel_headers header library when building inline
+ifeq ($(INLINE_KERNEL_BUILDING),true)
+ifneq (,$(findstring $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include,$(LOCAL_C_INCLUDES)))
+  LOCAL_C_INCLUDES := $(patsubst $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include,,$(LOCAL_C_INCLUDES))
+  LOCAL_HEADER_LIBRARIES += generated_kernel_headers
+endif
+
+# Some qcom binaries use this weird -isystem include...
+ifneq (,$(findstring $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include,$(LOCAL_CFLAGS)))
+  LOCAL_CFLAGS := $(patsubst -isystem $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include,,$(LOCAL_CFLAGS))
+  LOCAL_HEADER_LIBRARIES += generated_kernel_headers
+endif
+
+# Remove KERNEL_OBJ/usr from any LOCAL_ADDITIONAL_DEPENDENCIES, we will
+# just include generated_kernel_headers which already has the proper
+# dependency
+ifneq (,$(findstring $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr,$(LOCAL_ADDITIONAL_DEPENDENCIES)))
+  LOCAL_ADDITIONAL_DEPENDENCIES := $(patsubst $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr,,$(LOCAL_ADDITIONAL_DEPENDENCIES))
+endif
+
+# Replace device_kernel_headers with generated_kernel_headers
+ifneq (,$(findstring device_kernel_headers,$(LOCAL_HEADER_LIBRARIES)))
+  LOCAL_HEADER_LIBRARIES := $(patsubst device_kernel_headers,generated_kernel_headers,$(LOCAL_HEADER_LIBRARIES))
+endif
+endif
 
 # The following LOCAL_ variables will be modified in this file.
 # Because the same LOCAL_ variables may be used to define modules for both 1st arch and 2nd arch,
@@ -133,12 +161,12 @@ endif
 my_tidy_checks := $(subst $(space),,$(my_tidy_checks))
 
 # Configure the pool to use for clang rules.
-# If LOCAL_CC or LOCAL_CXX is set don't RBE.
+# If LOCAL_CC or LOCAL_CXX is set don't use goma or RBE.
 # If clang-tidy is being used, don't use the RBE pool (as clang-tidy runs in
 # the same action, and is not remoted)
 my_pool :=
 ifeq (,$(strip $(my_cc))$(strip $(my_cxx))$(strip $(my_tidy_checks)))
-  my_pool := $(RBE_POOL)
+  my_pool := $(GOMA_OR_RBE_POOL)
 endif
 
 ifneq (,$(strip $(foreach dir,$(NATIVE_COVERAGE_PATHS),$(filter $(dir)%,$(LOCAL_PATH)))))
@@ -1401,6 +1429,11 @@ my_tracked_gen_files :=
 $(foreach f,$(my_tracked_src_files),$(eval my_src_file_obj_$(s):=))
 my_tracked_src_files :=
 
+## Allow a device's own headers to take precedence over global ones
+ifneq ($(TARGET_SPECIFIC_HEADER_PATH),)
+my_c_includes := $(TOPDIR)$(TARGET_SPECIFIC_HEADER_PATH) $(my_c_includes)
+endif
+
 my_c_includes += $(TOPDIR)$(LOCAL_PATH) $(intermediates) $(generated_sources_dir)
 
 my_c_includes := $(foreach inc,$(my_c_includes),$(call clean-path,$(inc)))
@@ -1628,13 +1661,17 @@ ifndef LOCAL_IS_HOST_MODULE
 my_target_global_cflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_CFLAGS)
 my_target_global_conlyflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_CONLYFLAGS) $(my_c_std_conlyflags)
 my_target_global_cppflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_CPPFLAGS) $(my_cpp_std_cppflags)
-my_target_global_ldflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_LDFLAGS)
-include $(BUILD_SYSTEM)/pack_dyn_relocs_setup.mk
-ifeq ($(my_pack_module_relocations),true)
-  my_target_global_ldflags += -Wl,--pack-dyn-relocs=android+relr -Wl,--use-android-relr-tags
+ifeq ($(my_use_clang_lld),true)
+  my_target_global_ldflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_LLDFLAGS)
+  include $(BUILD_SYSTEM)/pack_dyn_relocs_setup.mk
+  ifeq ($(my_pack_module_relocations),true)
+    my_target_global_ldflags += -Wl,--pack-dyn-relocs=android+relr -Wl,--use-android-relr-tags
+  else
+    my_target_global_ldflags += -Wl,--pack-dyn-relocs=none
+  endif
 else
-  my_target_global_ldflags += -Wl,--pack-dyn-relocs=none
-endif
+  my_target_global_ldflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_LDFLAGS)
+endif # my_use_clang_lld
 
 ifeq ($(call module-in-vendor-or-product),true)
   my_target_global_c_includes :=
@@ -1679,7 +1716,11 @@ my_host_global_c_system_includes := $(SRC_SYSTEM_HEADERS) \
 my_host_global_cflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_CFLAGS)
 my_host_global_conlyflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_CONLYFLAGS) $(my_c_std_conlyflags)
 my_host_global_cppflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_CPPFLAGS) $(my_cpp_std_cppflags)
-my_host_global_ldflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_LDFLAGS)
+ifeq ($(my_use_clang_lld),true)
+  my_host_global_ldflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_LLDFLAGS)
+else
+  my_host_global_ldflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_LDFLAGS)
+endif # my_use_clang_lld
 
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_GLOBAL_C_INCLUDES := $(my_host_global_c_includes)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_GLOBAL_C_SYSTEM_INCLUDES := $(my_host_global_c_system_includes)
