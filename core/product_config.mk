@@ -393,6 +393,7 @@ ifdef PRODUCT_DEFAULT_DEV_CERTIFICATE
     $(error PRODUCT_DEFAULT_DEV_CERTIFICATE='$(PRODUCT_DEFAULT_DEV_CERTIFICATE)', \
       only 1 certificate is allowed.)
   endif
+  $(info Certificate: $(PRODUCT_DEFAULT_DEV_CERTIFICATE))
 endif
 
 $(foreach pair,$(PRODUCT_APEX_BOOT_JARS), \
