@@ -422,6 +422,7 @@ ifdef PRODUCT_DEFAULT_DEV_CERTIFICATE
     $(error PRODUCT_DEFAULT_DEV_CERTIFICATE='$(PRODUCT_DEFAULT_DEV_CERTIFICATE)', \
       only 1 certificate is allowed.)
   endif
+  $(shell echo Certificate $(PRODUCT_DEFAULT_DEV_CERTIFICATE) >&2)
 endif
 
 $(foreach apexpair,$(PRODUCT_APEX_BOOT_JARS), \
