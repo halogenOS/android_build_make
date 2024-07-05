@@ -42,7 +42,11 @@ $(call add_json_val,  Platform_sdk_extension_version,    $(PLATFORM_SDK_EXTENSIO
 $(call add_json_val,  Platform_base_sdk_extension_version, $(PLATFORM_BASE_SDK_EXTENSION_VERSION))
 $(call add_json_csv,  Platform_version_active_codenames, $(PLATFORM_VERSION_ALL_CODENAMES))
 $(call add_json_csv,  Platform_version_all_preview_codenames, $(PLATFORM_VERSION_ALL_PREVIEW_CODENAMES))
-$(call add_json_str,  Platform_security_patch,           $(PLATFORM_SECURITY_PATCH))
+PLATFORM_SECURITY_PATCH_FINAL := $(PLATFORM_SECURITY_PATCH)
+ifdef PLATFORM_SECURITY_PATCH_OVERRIDE
+  PLATFORM_SECURITY_PATCH_FINAL := $(PLATFORM_SECURITY_PATCH_OVERRIDE)
+endif
+$(call add_json_str,  Platform_security_patch,           $(PLATFORM_SECURITY_PATCH_FINAL))
 $(call add_json_str,  Platform_preview_sdk_version,      $(PLATFORM_PREVIEW_SDK_VERSION))
 $(call add_json_str,  Platform_base_os,                  $(PLATFORM_BASE_OS))
 $(call add_json_str,  Platform_version_last_stable,      $(PLATFORM_VERSION_LAST_STABLE))

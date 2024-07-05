@@ -1090,9 +1090,13 @@ ifdef BOARD_GKI_SIGNING_KEY_PATH
   # They can be set by the device manufacturer in the AVB properties instead.
   INTERNAL_MKBOOTIMG_VERSION_ARGS :=
 else
+  PLATFORM_SECURITY_PATCH_FINAL := $(PLATFORM_SECURITY_PATCH)
+  ifdef PLATFORM_SECURITY_PATCH_OVERRIDE
+    PLATFORM_SECURITY_PATCH_FINAL := $(PLATFORM_SECURITY_PATCH_OVERRIDE)
+  endif
   INTERNAL_MKBOOTIMG_VERSION_ARGS := \
     --os_version $(PLATFORM_VERSION_LAST_STABLE) \
-    --os_patch_level $(PLATFORM_SECURITY_PATCH)
+    --os_patch_level $(PLATFORM_SECURITY_PATCH_FINAL)
 endif # BOARD_GKI_SIGNING_KEY_PATH
 
 # $(1): image target to certify
@@ -4248,18 +4252,23 @@ SYSTEM_DLKM_OS_VERSION ?= $(PLATFORM_VERSION_LAST_STABLE)
 BOARD_AVB_SYSTEM_DLKM_ADD_HASHTREE_FOOTER_ARGS += \
     --prop com.android.build.system_dlkm.os_version:$(SYSTEM_DLKM_OS_VERSION)
 
+PLATFORM_SECURITY_PATCH_FINAL := $(PLATFORM_SECURITY_PATCH)
+ifdef PLATFORM_SECURITY_PATCH_OVERRIDE
+  PLATFORM_SECURITY_PATCH_FINAL := $(PLATFORM_SECURITY_PATCH_OVERRIDE)
+endif
+
 # Appends fingerprint and security patch level as a AVB property descriptor.
 BOARD_AVB_SYSTEM_ADD_HASHTREE_FOOTER_ARGS += \
     --prop com.android.build.system.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE) \
-    --prop com.android.build.system.security_patch:$(PLATFORM_SECURITY_PATCH)
+    --prop com.android.build.system.security_patch:$(PLATFORM_SECURITY_PATCH_FINAL)
 
 BOARD_AVB_PRODUCT_ADD_HASHTREE_FOOTER_ARGS += \
     --prop com.android.build.product.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE) \
-    --prop com.android.build.product.security_patch:$(PLATFORM_SECURITY_PATCH)
+    --prop com.android.build.product.security_patch:$(PLATFORM_SECURITY_PATCH_FINAL)
 
 BOARD_AVB_SYSTEM_EXT_ADD_HASHTREE_FOOTER_ARGS += \
     --prop com.android.build.system_ext.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE) \
-    --prop com.android.build.system_ext.security_patch:$(PLATFORM_SECURITY_PATCH)
+    --prop com.android.build.system_ext.security_patch:$(PLATFORM_SECURITY_PATCH_FINAL)
 
 BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS += \
     --prop com.android.build.boot.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE)
