@@ -1085,6 +1085,16 @@ else ifndef BUILDING_VENDOR_BOOT_IMAGE # && BOARD_USES_GENERIC_KERNEL_IMAGE != t
   endif
 endif # BUILDING_VENDOR_BOOT_IMAGE == "" && BOARD_USES_GENERIC_KERNEL_IMAGE != true
 
+ifdef PLATFORM_SECURITY_PATCH_OVERRIDE
+  ifeq ($(shell [[ $(PLATFORM_SECURITY_PATCH) > $(PLATFORM_SECURITY_PATCH_OVERRIDE) ]] && echo -n 1),1)
+    # Original patch is newer than override, set to latest
+    $(warning Security patch override $(PLATFORM_SECURITY_PATCH_OVERRIDE) is older than original patch $(PLATFORM_SECURITY_PATCH), undoing override. Please fix in device tree.)
+    PLATFORM_SECURITY_PATCH_OVERRIDE := $(PLATFORM_SECURITY_PATCH)
+  else
+    $(info Overriding security patch $(PLATFORM_SECURITY_PATCH) with $(PLATFORM_SECURITY_PATCH_OVERRIDE))
+  endif
+endif
+
 ifdef BOARD_GKI_SIGNING_KEY_PATH
   # GKI boot images will not set system version & SPL value in the header.
   # They can be set by the device manufacturer in the AVB properties instead.
