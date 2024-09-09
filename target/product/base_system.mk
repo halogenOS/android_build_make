@@ -502,6 +502,8 @@ ifneq (,$(filter eng, $(TARGET_BUILD_VARIANT)))
     PRODUCT_PRODUCT_PROPERTIES += persist.debug.perfetto.persistent_sysui_tracing_for_bugreport=1
 endif
 
+-include $(CUSTOM_PRODUCT_DIR)/build/target/product/base_system.mk
+
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)
 
 # Ensure all trunk-stable flags are available.
