@@ -53,6 +53,8 @@ config_map_files := $(wildcard build/release/release_config_map.mk) \
     $(wildcard vendor/google_shared/build/release/release_config_map.mk) \
     $(if $(wildcard vendor/google/release/release_config_map.mk), \
         vendor/google/release/release_config_map.mk, \
+        $(wildcard product/*/release/release_config_map.mk) \
+        $(wildcard product/*/*/release/release_config_map.mk) \
         $(sort \
             $(wildcard device/*/release/release_config_map.mk) \
             $(wildcard device/*/*/release/release_config_map.mk) \
@@ -65,6 +67,8 @@ protobuf_map_files := build/release/release_config_map.textproto \
     $(wildcard vendor/google_shared/build/release/release_config_map.textproto) \
     $(if $(wildcard vendor/google/release/release_config_map.textproto), \
         vendor/google/release/release_config_map.textproto, \
+        $(wildcard product/*/release/release_config_map.mk) \
+        $(wildcard product/*/*/release/release_config_map.mk) \
         $(sort \
             $(wildcard device/*/release/release_config_map.textproto) \
             $(wildcard device/*/*/release/release_config_map.textproto) \
