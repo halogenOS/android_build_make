@@ -47,31 +47,19 @@ endif
 # This logic is in make because starlark doesn't understand optional
 # vendor files.
 
+CUSTOM_DEVICE := $(shell echo "$(TARGET_PRODUCT)" | cut -d '_' -f2-)
+
 # If this is a google source tree, restrict it to only the one file
 # which has OWNERS control.  If it isn't let others define their own.
 config_map_files := $(wildcard build/release/release_config_map.mk) \
-    $(wildcard vendor/google_shared/build/release/release_config_map.mk) \
-    $(if $(wildcard vendor/google/release/release_config_map.mk), \
-        vendor/google/release/release_config_map.mk, \
-        $(sort \
-            $(wildcard device/*/release/release_config_map.mk) \
-            $(wildcard device/*/*/release/release_config_map.mk) \
-            $(wildcard vendor/*/release/release_config_map.mk) \
-            $(wildcard vendor/*/*/release/release_config_map.mk) \
-        ) \
-    )
+        $(wildcard $(CUSTOM_PRODUCT_DIR)/release/release_config_map.mk) \
+        $(wildcard device/$(CUSTOM_DEVICE)/release/release_config_map.mk) \
+        $(wildcard device/*/$(CUSTOM_DEVICE)/release/release_config_map.mk)
 
 protobuf_map_files := build/release/release_config_map.textproto \
-    $(wildcard vendor/google_shared/build/release/release_config_map.textproto) \
-    $(if $(wildcard vendor/google/release/release_config_map.textproto), \
-        vendor/google/release/release_config_map.textproto, \
-        $(sort \
-            $(wildcard device/*/release/release_config_map.textproto) \
-            $(wildcard device/*/*/release/release_config_map.textproto) \
-            $(wildcard vendor/*/release/release_config_map.textproto) \
-            $(wildcard vendor/*/*/release/release_config_map.textproto) \
-        ) \
-    )
+        $(wildcard $(CUSTOM_PRODUCT_DIR)/release/release_config_map.textproto) \
+        $(wildcard device/$(CUSTOM_DEVICE)/release/release_config_map.textproto) \
+        $(wildcard device/*/$(CUSTOM_DEVICE)/release/release_config_map.textproto)
 
 # Remove support for the legacy approach.
 _must_protobuf := true
