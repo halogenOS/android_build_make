@@ -1304,6 +1304,8 @@ ifeq ($(DEFAULT_SYSTEM_DEV_CERTIFICATE),build/make/target/product/security/testk
 BUILD_KEYS := test-keys
 else ifneq ($(filter vendor/lineage-priv/%,$(DEFAULT_SYSTEM_DEV_CERTIFICATE)),)
 BUILD_KEYS := release-keys
+else ifneq ($(filter vendor/halogenOS/private/%,$(DEFAULT_SYSTEM_DEV_CERTIFICATE)),)
+BUILD_KEYS := release-keys
 else
 BUILD_KEYS := dev-keys
 endif
