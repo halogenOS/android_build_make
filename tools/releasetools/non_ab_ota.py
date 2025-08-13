@@ -211,8 +211,8 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   build_id = target_info.GetBuildProp("ro.build.id")
   build_date = target_info.GetBuildProp("ro.build.date")
   security_patch = target_info.GetBuildProp("ro.build.version.security_patch")
-  real_security_patch = target_info.GetBuildProp("ro.custom.build.version.sp")
-  device = target_info.GetBuildProp("ro.custom.device")
+  real_security_patch = target_info.info_dict["product.build.prop"].GetProp("ro.custom.build.version.sp")
+  device = target_info.GetBuildProp("ro.product.system.device")
   script.PrintCustomBanner(android_version, build_id, build_date,
                                   security_patch, real_security_patch, device)
 
