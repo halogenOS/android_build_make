@@ -77,22 +77,13 @@ $(call dist-for-goals,layoutlib,$(LAYOUTLIB_BUILD_PROP)/layoutlib-build.prop:lay
 LAYOUTLIB_RES := $(call intermediates-dir-for,PACKAGING,layoutlib-res,HOST,COMMON)
 LAYOUTLIB_RES_FILES := $(shell find frameworks/base/core/res/res -type f -not -path 'frameworks/base/core/res/res/values-m[nc]c*' | sort)
 EMULATED_OVERLAYS_FILES := $(shell find frameworks/base/packages/overlays/*/res/ | sort)
-LAYOUTLIB_SUPPORTED_DEVICES := raviole/oriole raviole/raven bluejay/bluejay pantah/panther pantah/cheetah lynx/lynx felix/felix shusky/shiba shusky/husky akita/akita caimito/tokay caimito/caiman caimito/komodo comet/comet tangorpro/tangorpro
-LAYOUTLIB_DEVICE_OVERLAYS_FILES := $(addsuffix /overlay/frameworks/base/core/res/res/values/*, $(addprefix device/google/, $(LAYOUTLIB_SUPPORTED_DEVICES)))
-LAYOUTLIB_DEVICE_OVERLAYS_FILES := $(shell find $(LAYOUTLIB_DEVICE_OVERLAYS_FILES) | sort)
+LAYOUTLIB_DEVICE_OVERLAYS_FILES :=
 $(LAYOUTLIB_RES)/layoutlib-res.zip: $(SOONG_ZIP) $(HOST_OUT_EXECUTABLES)/aapt2 $(LAYOUTLIB_RES_FILES) $(EMULATED_OVERLAYS_FILES) $(LAYOUTLIB_DEVICE_OVERLAYS_FILES) frameworks/layoutlib/overlay_codenames.txt
 	rm -rf $@
 	echo $(LAYOUTLIB_RES_FILES) > $(LAYOUTLIB_RES)/filelist_res.txt
 	$(SOONG_ZIP) -C frameworks/base/core/res -l $(LAYOUTLIB_RES)/filelist_res.txt -o $(LAYOUTLIB_RES)/temp_res.zip
 	echo $(EMULATED_OVERLAYS_FILES) > $(LAYOUTLIB_RES)/filelist_emulated_overlays.txt
 	$(SOONG_ZIP) -C frameworks/base/packages -l $(LAYOUTLIB_RES)/filelist_emulated_overlays.txt -o $(LAYOUTLIB_RES)/temp_emulated_overlays.zip
-	for line in $$(cut -f 1 frameworks/layoutlib/overlay_codenames.txt); \
-	  do splitLine=($${line//:/ }) \
-	  origin_dir=device/google/*/$${splitLine[0]}/overlay/frameworks/base/core/res/res/values; \
-	  target_dir=$(LAYOUTLIB_RES)/overlays/$${splitLine[1]}/res/; \
-	  mkdir -p $$target_dir; \
-	  cp -r $$origin_dir $$target_dir; \
-	done
 	$(SOONG_ZIP) -C $(LAYOUTLIB_RES) -D $(LAYOUTLIB_RES)/overlays/ -o $(LAYOUTLIB_RES)/temp_device_overlays.zip
 	rm -rf $(LAYOUTLIB_RES)/data && unzip -q -d $(LAYOUTLIB_RES)/data $(LAYOUTLIB_RES)/temp_res.zip
 	unzip -q -d $(LAYOUTLIB_RES)/data $(LAYOUTLIB_RES)/temp_emulated_overlays.zip
