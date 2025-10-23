@@ -1429,6 +1429,7 @@ def BuildKeyMap(misc_info, key_mapping_options):
           devkeydir + "/platform": d + "/platform",
           devkeydir + "/networkstack": d + "/networkstack",
           devkeydir + "/sdk_sandbox": d + "/sdk_sandbox",
+          devkeydir + "/gmscompat_lib": d + "/gmscompat_lib",
       })
     else:
       OPTIONS.key_map[s] = d
