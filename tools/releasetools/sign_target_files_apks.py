@@ -1379,6 +1379,7 @@ def BuildKeyMap(misc_info, key_mapping_options):
           devkeydir + "/networkstack": d + "/networkstack",
           devkeydir + "/sdk_sandbox": d + "/sdk_sandbox",
           devkeydir + "/bluetooth": d + "/bluetooth",
+          devkeydir + "/gmscompat_lib": d + "/gmscompat_lib",
       })
     else:
       OPTIONS.key_map[s] = d
