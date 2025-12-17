@@ -69,7 +69,6 @@ endif
 ifneq (,$(findstring device_kernel_headers,$(LOCAL_HEADER_LIBRARIES)))
   LOCAL_HEADER_LIBRARIES := $(patsubst device_kernel_headers,generated_kernel_headers,$(LOCAL_HEADER_LIBRARIES))
 endif
-endif
 
 # The following LOCAL_ variables will be modified in this file.
 # Because the same LOCAL_ variables may be used to define modules for both 1st arch and 2nd arch,
