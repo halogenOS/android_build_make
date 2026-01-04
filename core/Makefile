@@ -1051,12 +1051,14 @@ endif
 
 # -----------------------------------------------------------------
 # dtbo image
-ifdef BOARD_PREBUILT_DTBOIMAGE
+# Support both prebuilt DTBO and source-built DTBO (BUILT_DTBOIMAGE)
+DTBO_IMAGE_SOURCE := $(if $(BOARD_PREBUILT_DTBOIMAGE),$(BOARD_PREBUILT_DTBOIMAGE),$(BUILT_DTBOIMAGE))
+ifneq ($(DTBO_IMAGE_SOURCE),)
 INSTALLED_DTBOIMAGE_TARGET := $(PRODUCT_OUT)/dtbo.img
 
 ifeq ($(BOARD_AVB_ENABLE),true)
-$(INSTALLED_DTBOIMAGE_TARGET): $(BOARD_PREBUILT_DTBOIMAGE) $(AVBTOOL) $(BOARD_AVB_DTBO_KEY_PATH)
-	cp $(BOARD_PREBUILT_DTBOIMAGE) $@
+$(INSTALLED_DTBOIMAGE_TARGET): $(DTBO_IMAGE_SOURCE) $(AVBTOOL) $(BOARD_AVB_DTBO_KEY_PATH)
+	cp $(DTBO_IMAGE_SOURCE) $@
 	chmod +w $@
 	$(AVBTOOL) add_hash_footer \
 	    --image $@ \
@@ -1066,15 +1068,15 @@ $(INSTALLED_DTBOIMAGE_TARGET): $(BOARD_PREBUILT_DTBOIMAGE) $(AVBTOOL) $(BOARD_AV
 	    $(BOARD_AVB_DTBO_ADD_HASH_FOOTER_ARGS)
 
 $(call declare-1p-container,$(INSTALLED_DTBOIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_DTBOIMAGE_TARGET),$(BOARD_PREBUILT_DTBOIMAGE),$(PRODUCT_OUT)/:/)
+$(call declare-container-license-deps,$(INSTALLED_DTBOIMAGE_TARGET),$(DTBO_IMAGE_SOURCE),$(PRODUCT_OUT)/:/)
 
 UNMOUNTED_NOTICE_VENDOR_DEPS+= $(INSTALLED_DTBOIMAGE_TARGET)
 else
-$(INSTALLED_DTBOIMAGE_TARGET): $(BOARD_PREBUILT_DTBOIMAGE)
-	cp $(BOARD_PREBUILT_DTBOIMAGE) $@
+$(INSTALLED_DTBOIMAGE_TARGET): $(DTBO_IMAGE_SOURCE)
+	cp $(DTBO_IMAGE_SOURCE) $@
 endif
 
-endif # BOARD_PREBUILT_DTBOIMAGE
+endif # DTBO_IMAGE_SOURCE
 
 # -----------------------------------------------------------------
 
@@ -2863,7 +2865,7 @@ ifdef BOARD_INCLUDE_RECOVERY_DTBO
   ifdef BOARD_PREBUILT_RECOVERY_DTBOIMAGE
     recoveryimage-deps += $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE)
   else
-    recoveryimage-deps += $(BOARD_PREBUILT_DTBOIMAGE)
+    recoveryimage-deps += $(DTBO_IMAGE_SOURCE)
   endif
 endif
 ifdef BOARD_INCLUDE_RECOVERY_ACPIO
@@ -5969,7 +5971,7 @@ endif
 ifneq ($(INSTALLED_INIT_BOOT_IMAGE_TARGET),)
 	$(hide) echo "flash init_boot" >> $@
 endif
-ifdef BOARD_PREBUILT_DTBOIMAGE
+ifneq ($(DTBO_IMAGE_SOURCE),)
 	$(hide) echo "flash dtbo" >> $@
 endif
 ifneq ($(INSTALLED_DTIMAGE_TARGET),)
@@ -6216,7 +6218,7 @@ endif
 ifeq ($(BOARD_NON_AB_OTA_DISABLE_COMPRESSION),true)
 	$(hide) echo "board_non_ab_ota_disable_compression=true" >> $@
 endif
-ifdef BOARD_PREBUILT_DTBOIMAGE
+ifneq ($(DTBO_IMAGE_SOURCE),)
 	$(hide) echo "has_dtbo=true" >> $@
 ifeq ($(BOARD_AVB_ENABLE),true)
 	$(hide) echo "dtbo_size=$(BOARD_DTBOIMG_PARTITION_SIZE)" >> $@
@@ -6227,7 +6229,7 @@ ifdef BOARD_AVB_DTBO_KEY_PATH
 	$(hide) echo "avb_dtbo_rollback_index_location=$(BOARD_AVB_DTBO_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_DTBO_KEY_PATH
 endif # BOARD_AVB_ENABLE
-endif # BOARD_PREBUILT_DTBOIMAGE
+endif # DTBO_IMAGE_SOURCE
 ifeq ($(BOARD_USES_PVMFWIMAGE),true)
 	$(hide) echo "has_pvmfw=true" >> $@
 ifeq ($(BOARD_AVB_ENABLE),true)
@@ -6657,7 +6659,7 @@ $(BUILT_TARGET_FILES_DIR): \
 	    $(BUILT_KERNEL_16K_TARGET) \
 	    $(BUILT_BOOTIMAGE_16K_TARGET) \
 	    $(INSTALLED_DTBOIMAGE_16KB_TARGET) \
-	    $(BOARD_PREBUILT_DTBOIMAGE) \
+	    $(DTBO_IMAGE_SOURCE) \
 	    $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE) \
 	    $(BOARD_RECOVERY_ACPIO) \
 	    $(PRODUCT_SYSTEM_BASE_FS_PATH) \
@@ -7011,10 +7013,10 @@ ifdef BOARD_PREBUILT_SYSTEM_DLKMIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
 	$(hide) cp $(INSTALLED_SYSTEM_DLKMIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
-ifdef BOARD_PREBUILT_DTBOIMAGE
+ifneq ($(DTBO_IMAGE_SOURCE),)
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(INSTALLED_DTBOIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
-endif # BOARD_PREBUILT_DTBOIMAGE
+endif # DTBO_IMAGE_SOURCE
 ifdef BOARD_KERNEL_PATH_16K
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(BUILT_KERNEL_16K_TARGET) $(zip_root)/PREBUILT_IMAGES/
@@ -7186,7 +7188,7 @@ $(call declare-container-license-deps,$(BUILT_TARGET_FILES_PACKAGE), $(INSTALLED
             $(INSTALLED_RAMDISK_TARGET) \
             $(INSTALLED_DTBIMAGE_TARGET) \
             $(INSTALLED_2NDBOOTLOADER_TARGET) \
-            $(BOARD_PREBUILT_DTBOIMAGE) \
+            $(DTBO_IMAGE_SOURCE) \
             $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE) \
             $(BOARD_RECOVERY_ACPIO) \
             $(PRODUCT_SYSTEM_BASE_FS_PATH) \
