@@ -56,6 +56,12 @@ _protobuf_map_files := build/release/release_config_map.textproto \
         $(wildcard device/$(CUSTOM_DEVICE)/release/release_config_map.textproto) \
         $(wildcard device/*/$(CUSTOM_DEVICE)/release/release_config_map.textproto)
 
+# Goldfish-based emulator products use device/generic/goldfish but
+# CUSTOM_DEVICE resolves to the product name, not the device tree name.
+ifneq ($(filter sdk_phone%,$(CUSTOM_DEVICE)),)
+_protobuf_map_files += $(wildcard device/generic/goldfish/release/release_config_map.textproto)
+endif
+
 # PRODUCT_RELEASE_CONFIG_MAPS is set by Soong using an initial run of product
 # config to capture only the list of config maps needed by the build.
 # Keep them in the order provided, but remove duplicates.
