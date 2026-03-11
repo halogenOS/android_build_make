@@ -2698,12 +2698,19 @@ def ReadApkCerts(tf_zip):
   # META/apkcerts.txt contains the info for _all_ the packages known at build
   # time. Filter out the ones that are not installed.
   installed_files = set()
-  for name in tf_zip.namelist():
-    basename = os.path.basename(name)
-    if basename:
-      installed_files.add(basename)
+  if isinstance(tf_zip, str) and os.path.isdir(tf_zip):
+    for root, _, files in os.walk(tf_zip):
+      for f in files:
+        installed_files.add(f)
+    apkcerts_data = ReadFromInputFile(tf_zip, 'META/apkcerts.txt')
+  else:
+    for name in tf_zip.namelist():
+      basename = os.path.basename(name)
+      if basename:
+        installed_files.add(basename)
+    apkcerts_data = tf_zip.read('META/apkcerts.txt').decode()
 
-  for line in tf_zip.read('META/apkcerts.txt').decode().split('\n'):
+  for line in apkcerts_data.split('\n'):
     line = line.strip()
     if not line:
       continue
