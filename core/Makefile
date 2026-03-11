@@ -6315,7 +6315,7 @@ endif
 define package_files-copy-root
   if [ -d "$(strip $(1))" -a "$$(ls -A $(1))" ]; then \
     mkdir -p $(2) && \
-    $(ACP) -rd $(strip $(1))/. $(strip $(2))/; \
+    cp -a --reflink=auto $(strip $(1))/. $(strip $(2))/; \
   fi
 endef
 
@@ -6476,7 +6476,7 @@ define copy-image-and-generate-map
       $(eval _no_map_file := "true")) \
     $(if $(filter $(_supported_fs_for_map_file_generator),$(_map_fs_type))$(_no_map_file),\
       mkdir -p $(2); \
-      cp $(1) $(2); \
+      cp --reflink=auto $(1) $(2); \
       $(if $(3),$(HOST_OUT_EXECUTABLES)/map_file_generator $(1) $(2)/$(3).map)) \
     $(eval _img :=) \
     $(eval _map_fs_type :=) \
@@ -6698,27 +6698,27 @@ ifneq (true,$(BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT))
 endif
 ifdef INSTALLED_KERNEL_TARGET
 ifneq (,$(filter true,$(BOARD_USES_RECOVERY_AS_BOOT)))
-	cp $(INSTALLED_KERNEL_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/
+	cp --reflink=auto $(INSTALLED_KERNEL_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/
 else ifneq (true,$(BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE))
-	cp $(firstword $(INSTALLED_KERNEL_TARGET)) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/kernel
+	cp --reflink=auto $(firstword $(INSTALLED_KERNEL_TARGET)) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/kernel
 endif
 endif
 ifneq (truetrue,$(strip $(BUILDING_VENDOR_BOOT_IMAGE))$(strip $(BOARD_USES_RECOVERY_AS_BOOT)))
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
-	cp $(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/second
+	cp --reflink=auto $(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/second
 endif
 ifdef BOARD_INCLUDE_RECOVERY_DTBO
 ifdef BOARD_PREBUILT_RECOVERY_DTBOIMAGE
-	cp $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/recovery_dtbo
+	cp --reflink=auto $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/recovery_dtbo
 else
-	cp $(DTBO_IMAGE_SOURCE) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/recovery_dtbo
+	cp --reflink=auto $(DTBO_IMAGE_SOURCE) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/recovery_dtbo
 endif
 endif # BOARD_INCLUDE_RECOVERY_DTBO
 ifdef BOARD_INCLUDE_RECOVERY_ACPIO
-	cp $(BOARD_RECOVERY_ACPIO) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/recovery_acpio
+	cp --reflink=auto $(BOARD_RECOVERY_ACPIO) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/recovery_acpio
 endif
 ifdef INSTALLED_DTBIMAGE_TARGET
-	cp $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/dtb
+	cp --reflink=auto $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/dtb
 endif
 ifneq (true,$(BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE))
 ifdef INTERNAL_KERNEL_CMDLINE
@@ -6740,17 +6740,17 @@ ifneq ($(BOARD_USES_RECOVERY_AS_BOOT),true)
 	$(hide) $(call package_files-copy-root, \
 	    $(TARGET_RAMDISK_OUT),$(zip_root)/BOOT/RAMDISK)
 ifdef INSTALLED_KERNEL_TARGET
-	$(hide) cp $(INSTALLED_KERNEL_TARGET) $(zip_root)/BOOT/
+	$(hide) cp --reflink=auto $(INSTALLED_KERNEL_TARGET) $(zip_root)/BOOT/
 endif
 ifeq (true,$(BOARD_USES_GENERIC_KERNEL_IMAGE))
 	echo "$(GENERIC_KERNEL_CMDLINE)" > $(zip_root)/BOOT/cmdline
 else ifndef INSTALLED_VENDOR_BOOTIMAGE_TARGET # && BOARD_USES_GENERIC_KERNEL_IMAGE != true
 	echo "$(INTERNAL_KERNEL_CMDLINE)" > $(zip_root)/BOOT/cmdline
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
-	cp $(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/BOOT/second
+	cp --reflink=auto $(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/BOOT/second
 endif
 ifdef INSTALLED_DTBIMAGE_TARGET
-	cp $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/BOOT/dtb
+	cp --reflink=auto $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/BOOT/dtb
 endif
 ifdef BOARD_KERNEL_BASE
 	echo "$(BOARD_KERNEL_BASE)" > $(zip_root)/BOOT/base
@@ -6762,18 +6762,18 @@ endif # INSTALLED_VENDOR_BOOTIMAGE_TARGET == "" && BOARD_USES_GENERIC_KERNEL_IMA
 endif # BOARD_USES_RECOVERY_AS_BOOT not true
 	$(hide) $(foreach t,$(INSTALLED_RADIOIMAGE_TARGET),\
 	            mkdir -p $(zip_root)/RADIO; \
-	            cp $(t) $(zip_root)/RADIO/$(notdir $(t));)
+	            cp --reflink=auto $(t) $(zip_root)/RADIO/$(notdir $(t));)
 ifdef INSTALLED_VENDOR_BOOTIMAGE_TARGET
 	mkdir -p $(zip_root)/VENDOR_BOOT
 	$(call package_files-copy-root, \
 	    $(TARGET_VENDOR_RAMDISK_OUT),$(zip_root)/VENDOR_BOOT/RAMDISK)
 ifdef INSTALLED_DTBIMAGE_TARGET
 ifneq ($(BUILDING_VENDOR_KERNEL_BOOT_IMAGE),true)
-	cp $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/VENDOR_BOOT/dtb
+	cp --reflink=auto $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/VENDOR_BOOT/dtb
 endif
 endif # end of INSTALLED_DTBIMAGE_TARGET
 ifdef INTERNAL_VENDOR_BOOTCONFIG_TARGET
-	cp $(INTERNAL_VENDOR_BOOTCONFIG_TARGET) $(zip_root)/VENDOR_BOOT/vendor_bootconfig
+	cp --reflink=auto $(INTERNAL_VENDOR_BOOTCONFIG_TARGET) $(zip_root)/VENDOR_BOOT/vendor_bootconfig
 endif
 ifdef BOARD_KERNEL_BASE
 	echo "$(BOARD_KERNEL_BASE)" > $(zip_root)/VENDOR_BOOT/base
@@ -6789,7 +6789,7 @@ ifdef INTERNAL_VENDOR_RAMDISK_FRAGMENTS
 	  echo "$(BOARD_VENDOR_RAMDISK_FRAGMENT.$(vendor_ramdisk_fragment).MKBOOTIMG_ARGS)" > "$(zip_root)/VENDOR_BOOT/RAMDISK_FRAGMENTS/$(vendor_ramdisk_fragment)/mkbootimg_args"; \
 	  $(eval prebuilt_ramdisk := $(BOARD_VENDOR_RAMDISK_FRAGMENT.$(vendor_ramdisk_fragment).PREBUILT)) \
 	  $(if $(prebuilt_ramdisk), \
-	    cp "$(prebuilt_ramdisk)" "$(zip_root)/VENDOR_BOOT/RAMDISK_FRAGMENTS/$(vendor_ramdisk_fragment)/prebuilt_ramdisk";, \
+	    cp --reflink=auto "$(prebuilt_ramdisk)" "$(zip_root)/VENDOR_BOOT/RAMDISK_FRAGMENTS/$(vendor_ramdisk_fragment)/prebuilt_ramdisk";, \
 	    $(call package_files-copy-root, \
 	      $(VENDOR_RAMDISK_FRAGMENT.$(vendor_ramdisk_fragment).STAGING_DIR), \
 	      $(zip_root)/VENDOR_BOOT/RAMDISK_FRAGMENTS/$(vendor_ramdisk_fragment)/RAMDISK); \
@@ -6801,7 +6801,7 @@ ifdef INSTALLED_VENDOR_KERNEL_BOOTIMAGE_TARGET
 	$(call package_files-copy-root, \
 	    $(TARGET_VENDOR_KERNEL_RAMDISK_OUT),$(zip_root)/VENDOR_KERNEL_BOOT/RAMDISK)
 ifdef INSTALLED_DTBIMAGE_TARGET
-	cp $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/VENDOR_KERNEL_BOOT/dtb
+	cp --reflink=auto $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/VENDOR_KERNEL_BOOT/dtb
 endif
 ifdef BOARD_KERNEL_PAGESIZE
 	echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/VENDOR_KERNEL_BOOT/pagesize
@@ -6810,9 +6810,9 @@ endif # INSTALLED_VENDOR_BOOTIMAGE_TARGET
 ifdef BOARD_CUSTOM_BOOTIMG
 	@# Prebuilt boot images
 	$(hide) mkdir -p $(zip_root)/BOOTABLE_IMAGES
-	$(hide) $(ACP) $(INSTALLED_BOOTIMAGE_TARGET) $(zip_root)/BOOTABLE_IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_BOOTIMAGE_TARGET) $(zip_root)/BOOTABLE_IMAGES/
 ifneq ($(INSTALLED_RECOVERYIMAGE_TARGET),)
-	$(hide) $(ACP) $(INSTALLED_RECOVERYIMAGE_TARGET) $(zip_root)/BOOTABLE_IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_RECOVERYIMAGE_TARGET) $(zip_root)/BOOTABLE_IMAGES/
 endif
 endif
 ifdef BUILDING_SYSTEM_IMAGE
@@ -6833,7 +6833,7 @@ else ifdef INSTALLED_BUILD_PROP_TARGET
 	@# because add_img_to_target_files may need it to build other partition
 	@# images.
 	$(hide) mkdir -p "$(zip_root)/SYSTEM"
-	$(hide) cp "$(INSTALLED_BUILD_PROP_TARGET)" "$(patsubst $(TARGET_OUT)/%,$(zip_root)/SYSTEM/%,$(INSTALLED_BUILD_PROP_TARGET))"
+	$(hide) cp --reflink=auto "$(INSTALLED_BUILD_PROP_TARGET)" "$(patsubst $(TARGET_OUT)/%,$(zip_root)/SYSTEM/%,$(INSTALLED_BUILD_PROP_TARGET))"
 endif
 ifdef BUILDING_USERDATA_IMAGE
 	@# Contents of the data image
@@ -6882,64 +6882,64 @@ ifdef BUILDING_SYSTEM_OTHER_IMAGE
 endif
 	@# Extra contents of the OTA package
 	$(hide) mkdir -p $(zip_root)/OTA
-	$(hide) cp $(INSTALLED_ANDROID_INFO_TXT_TARGET) $(zip_root)/OTA/
+	$(hide) cp --reflink=auto $(INSTALLED_ANDROID_INFO_TXT_TARGET) $(zip_root)/OTA/
 ifdef BUILDING_RAMDISK_IMAGE
 ifeq (true,$(BOARD_IMG_USE_RAMDISK))
 	@# Contents of the ramdisk image
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_RAMDISK_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_RAMDISK_TARGET) $(zip_root)/IMAGES/
 endif
 endif
 ifeq ($(TARGET_OTA_ALLOW_NON_AB),true)
 ifneq ($(built_ota_tools),)
 	$(hide) mkdir -p $(zip_root)/OTA/bin
-	$(hide) cp $(PRIVATE_OTA_TOOLS) $(zip_root)/OTA/bin/
+	$(hide) cp --reflink=auto $(PRIVATE_OTA_TOOLS) $(zip_root)/OTA/bin/
 endif
 endif
 	@# Files that do not end up in any images, but are necessary to
 	@# build them.
 	$(hide) mkdir -p $(zip_root)/META
-	$(hide) cp $(APKCERTS_FILE) $(zip_root)/META/apkcerts.txt
-	$(hide) cp $(APEX_KEYS_FILE) $(zip_root)/META/apexkeys.txt
+	$(hide) cp --reflink=auto $(APKCERTS_FILE) $(zip_root)/META/apkcerts.txt
+	$(hide) cp --reflink=auto $(APEX_KEYS_FILE) $(zip_root)/META/apexkeys.txt
 ifneq ($(tool_extension),)
-	$(hide) cp $(PRIVATE_TOOL_EXTENSION) $(zip_root)/META/
+	$(hide) cp --reflink=auto $(PRIVATE_TOOL_EXTENSION) $(zip_root)/META/
 endif
 	$(hide) echo "$(PRODUCT_OTA_PUBLIC_KEYS)" > $(zip_root)/META/otakeys.txt
-	$(hide) cp $(SELINUX_FC) $(zip_root)/META/file_contexts.bin
-	$(hide) cp $(INSTALLED_MISC_INFO_TARGET) $(zip_root)/META/misc_info.txt
+	$(hide) cp --reflink=auto $(SELINUX_FC) $(zip_root)/META/file_contexts.bin
+	$(hide) cp --reflink=auto $(INSTALLED_MISC_INFO_TARGET) $(zip_root)/META/misc_info.txt
 ifneq ($(INSTALLED_FASTBOOT_INFO_TARGET),)
-	$(hide) cp $(INSTALLED_FASTBOOT_INFO_TARGET) $(zip_root)/META/fastboot-info.txt
+	$(hide) cp --reflink=auto $(INSTALLED_FASTBOOT_INFO_TARGET) $(zip_root)/META/fastboot-info.txt
 endif
 ifneq ($(PRODUCT_SYSTEM_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_SYSTEM_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_SYSTEM_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_SYSTEM_BASE_FS_PATH))
 endif
 ifneq ($(PRODUCT_VENDOR_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_VENDOR_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_VENDOR_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_VENDOR_BASE_FS_PATH))
 endif
 ifneq ($(PRODUCT_PRODUCT_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_PRODUCT_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_PRODUCT_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_PRODUCT_BASE_FS_PATH))
 endif
 ifneq ($(PRODUCT_SYSTEM_EXT_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_SYSTEM_EXT_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_SYSTEM_EXT_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_SYSTEM_EXT_BASE_FS_PATH))
 endif
 ifneq ($(PRODUCT_ODM_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_ODM_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_ODM_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_ODM_BASE_FS_PATH))
 endif
 ifneq ($(PRODUCT_VENDOR_DLKM_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_VENDOR_DLKM_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_VENDOR_DLKM_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_VENDOR_DLKM_BASE_FS_PATH))
 endif
 ifneq ($(PRODUCT_ODM_DLKM_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_ODM_DLKM_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_ODM_DLKM_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_ODM_DLKM_BASE_FS_PATH))
 endif
 ifneq ($(PRODUCT_SYSTEM_DLKM_BASE_FS_PATH),)
-	$(hide) cp $(PRODUCT_SYSTEM_DLKM_BASE_FS_PATH) \
+	$(hide) cp --reflink=auto $(PRODUCT_SYSTEM_DLKM_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_SYSTEM_DLKM_BASE_FS_PATH))
 endif
 ifeq ($(TARGET_OTA_ALLOW_NON_AB),true)
@@ -6950,9 +6950,9 @@ endif
 endif
 ifeq ($(AB_OTA_UPDATER),true)
 	@# When using the A/B updater, include the updater config files in the zip.
-	$(hide) cp $(TOPDIR)system/update_engine/update_engine.conf $(zip_root)/META/update_engine_config.txt
-	$(hide) cp $(TOPDIR)external/zucchini/version_info.h $(zip_root)/META/zucchini_config.txt
-	$(hide) cp $(HOST_OUT_SHARED_LIBRARIES)/liblz4.so $(zip_root)/META/liblz4.so
+	$(hide) cp --reflink=auto $(TOPDIR)system/update_engine/update_engine.conf $(zip_root)/META/update_engine_config.txt
+	$(hide) cp --reflink=auto $(TOPDIR)external/zucchini/version_info.h $(zip_root)/META/zucchini_config.txt
+	$(hide) cp --reflink=auto $(HOST_OUT_SHARED_LIBRARIES)/liblz4.so $(zip_root)/META/liblz4.so
 	$(hide) for part in $(sort $(AB_OTA_PARTITIONS)); do \
 	  echo "$${part}" >> $(zip_root)/META/ab_partitions.txt; \
 	done
@@ -6960,98 +6960,98 @@ ifeq ($(AB_OTA_UPDATER),true)
 	  echo "$${conf}" >> $(zip_root)/META/postinstall_config.txt; \
 	done
 ifdef OSRELEASED_DIRECTORY
-	$(hide) cp $(TARGET_OUT_OEM)/$(OSRELEASED_DIRECTORY)/product_id $(zip_root)/META/product_id.txt
-	$(hide) cp $(TARGET_OUT_OEM)/$(OSRELEASED_DIRECTORY)/product_version $(zip_root)/META/product_version.txt
-	$(hide) cp $(TARGET_OUT_ETC)/$(OSRELEASED_DIRECTORY)/system_version $(zip_root)/META/system_version.txt
+	$(hide) cp --reflink=auto $(TARGET_OUT_OEM)/$(OSRELEASED_DIRECTORY)/product_id $(zip_root)/META/product_id.txt
+	$(hide) cp --reflink=auto $(TARGET_OUT_OEM)/$(OSRELEASED_DIRECTORY)/product_version $(zip_root)/META/product_version.txt
+	$(hide) cp --reflink=auto $(TARGET_OUT_ETC)/$(OSRELEASED_DIRECTORY)/system_version $(zip_root)/META/system_version.txt
 endif
 endif
 ifdef BOARD_PREBUILT_VENDOR_BOOTIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifdef BOARD_PREBUILT_VENDORIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_VENDORIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_VENDORIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifdef BOARD_PREBUILT_PRODUCTIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_PRODUCTIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_PRODUCTIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifdef BOARD_PREBUILT_SYSTEM_EXTIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_SYSTEM_EXTIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_SYSTEM_EXTIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifdef BOARD_PREBUILT_INIT_BOOT_IMAGE
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
-	$(hide) cp $(INSTALLED_INIT_BOOT_IMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_INIT_BOOT_IMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
 endif
 
 ifndef BOARD_PREBUILT_BOOTIMAGE
 ifneq (,$(strip $(INTERNAL_PREBUILT_BOOTIMAGE) $(filter true,$(BOARD_COPY_BOOT_IMAGE_TO_TARGET_FILES))))
 ifdef INSTALLED_BOOTIMAGE_TARGET
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_BOOTIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_BOOTIMAGE_TARGET) $(zip_root)/IMAGES/
 endif # INSTALLED_BOOTIMAGE_TARGET
 endif # INTERNAL_PREBUILT_BOOTIMAGE != "" || BOARD_COPY_BOOT_IMAGE_TO_TARGET_FILES == true
 else # BOARD_PREBUILT_BOOTIMAGE is defined
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
-	$(hide) cp $(INSTALLED_BOOTIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_BOOTIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
 endif # BOARD_PREBUILT_BOOTIMAGE
 ifdef BOARD_PREBUILT_ODMIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_ODMIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_ODMIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifdef BOARD_PREBUILT_VENDOR_DLKMIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_VENDOR_DLKMIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_VENDOR_DLKMIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifdef BOARD_PREBUILT_ODM_DLKMIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_ODM_DLKMIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_ODM_DLKMIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifdef BOARD_PREBUILT_SYSTEM_DLKMIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_SYSTEM_DLKMIMAGE_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_SYSTEM_DLKMIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
 ifneq ($(DTBO_IMAGE_SOURCE),)
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
-	$(hide) cp $(INSTALLED_DTBOIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_DTBOIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
 endif # DTBO_IMAGE_SOURCE
 ifdef BOARD_KERNEL_PATH_16K
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
-	$(hide) cp $(BUILT_KERNEL_16K_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) cp --reflink=auto $(BUILT_KERNEL_16K_TARGET) $(zip_root)/PREBUILT_IMAGES/
 endif # BOARD_KERNEL_PATH_16K
 ifdef BOARD_KERNEL_MODULES_16K
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
-	$(hide) cp $(BUILT_RAMDISK_16K_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) cp --reflink=auto $(BUILT_RAMDISK_16K_TARGET) $(zip_root)/PREBUILT_IMAGES/
 endif # BOARD_KERNEL_MODULES_16K
 ifdef BUILT_BOOTIMAGE_16K_TARGET
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(BUILT_BOOTIMAGE_16K_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(BUILT_BOOTIMAGE_16K_TARGET) $(zip_root)/IMAGES/
 endif # BUILT_BOOTIMAGE_16K_TARGET
 ifdef INSTALLED_DTBOIMAGE_16KB_TARGET
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_DTBOIMAGE_16KB_TARGET) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_DTBOIMAGE_16KB_TARGET) $(zip_root)/IMAGES/
 endif # INSTALLED_DTBOIMAGE_16KB_TARGET
 ifeq ($(BOARD_USES_PVMFWIMAGE),true)
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
-	$(hide) cp $(INSTALLED_PVMFWIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
-	$(hide) cp $(INSTALLED_PVMFW_EMBEDDED_AVBKEY_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_PVMFWIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_PVMFW_EMBEDDED_AVBKEY_TARGET) $(zip_root)/PREBUILT_IMAGES/
 	$(hide) mkdir -p $(zip_root)/PVMFW
-	$(hide) cp $(INSTALLED_PVMFW_BINARY_TARGET) $(zip_root)/PVMFW/
+	$(hide) cp --reflink=auto $(INSTALLED_PVMFW_BINARY_TARGET) $(zip_root)/PVMFW/
 endif
 ifneq ($(DESKTOP_SIGNED_FW_ZIP),)
 	$(hide) mkdir -p $(zip_root)/SIGNED_PREBUILTS
-	$(hide) cp $(DESKTOP_SIGNED_FW_ZIP) $(zip_root)/SIGNED_PREBUILTS/ap-ec-fw-signed.zip
+	$(hide) cp --reflink=auto $(DESKTOP_SIGNED_FW_ZIP) $(zip_root)/SIGNED_PREBUILTS/ap-ec-fw-signed.zip
 endif
 ifdef BOARD_PREBUILT_BOOTLOADER
 	$(hide) mkdir -p $(zip_root)/IMAGES
-	$(hide) cp $(INSTALLED_BOOTLOADER_MODULE) $(zip_root)/IMAGES/
+	$(hide) cp --reflink=auto $(INSTALLED_BOOTLOADER_MODULE) $(zip_root)/IMAGES/
 endif
 ifneq ($(strip $(BOARD_CUSTOMIMAGES_PARTITION_LIST)),)
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) $(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
-	    $(foreach image,$(BOARD_$(call to-upper,$(partition))_IMAGE_LIST),cp $(image) $(zip_root)/PREBUILT_IMAGES/;))
+	    $(foreach image,$(BOARD_$(call to-upper,$(partition))_IMAGE_LIST),cp --reflink=auto $(image) $(zip_root)/PREBUILT_IMAGES/;))
 endif # BOARD_CUSTOMIMAGES_PARTITION_LIST
 	@# The radio images in BOARD_PACK_RADIOIMAGES will be additionally copied from RADIO/ into
 	@# IMAGES/, which then will be added into <product>-img.zip. Such images must be listed in
@@ -7099,39 +7099,39 @@ endif
 ifdef BUILDING_INIT_BOOT_IMAGE
 	$(hide) $(call package_files-copy-root, $(TARGET_RAMDISK_OUT),$(zip_root)/INIT_BOOT/RAMDISK)
 	$(hide) $(call fs_config,$(zip_root)/INIT_BOOT/RAMDISK,) > $(zip_root)/META/init_boot_filesystem_config.txt
-	$(hide) cp $(RAMDISK_NODE_LIST) $(zip_root)/META/ramdisk_node_list
+	$(hide) cp --reflink=auto $(RAMDISK_NODE_LIST) $(zip_root)/META/ramdisk_node_list
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/INIT_BOOT/pagesize
 endif # BOARD_KERNEL_PAGESIZE
 endif # BUILDING_INIT_BOOT_IMAGE
 ifdef HAS_ANY_EROFS_PARTITION
 ifdef BOARD_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_EROFS_COMPRESS_HINTS) $(zip_root)/META/erofs_default_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_EROFS_COMPRESS_HINTS) $(zip_root)/META/erofs_default_compress_hints.txt
 endif
 endif
 ifdef BOARD_SYSTEMIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_SYSTEMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/system_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_SYSTEMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/system_erofs_compress_hints.txt
 endif
 ifdef BOARD_SYSTEM_EXTIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_SYSTEM_EXTIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/system_ext_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_SYSTEM_EXTIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/system_ext_erofs_compress_hints.txt
 endif
 ifdef BOARD_PRODUCTIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_PRODUCTIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/product_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_PRODUCTIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/product_erofs_compress_hints.txt
 endif
 ifdef BOARD_VENDORIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_VENDORIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/vendor_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_VENDORIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/vendor_erofs_compress_hints.txt
 endif
 ifdef BOARD_ODMIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_ODMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/odm_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_ODMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/odm_erofs_compress_hints.txt
 endif
 ifdef BOARD_VENDOR_DLKMIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_VENDOR_DLKMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/vendor_dlkm_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_VENDOR_DLKMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/vendor_dlkm_erofs_compress_hints.txt
 endif
 ifdef BOARD_ODM_DLKMIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_ODM_DLKMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/odm_dlkm_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_ODM_DLKMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/odm_dlkm_erofs_compress_hints.txt
 endif
 ifdef BOARD_SYSTEM_DLKMIMAGE_EROFS_COMPRESS_HINTS
-	$(hide) cp $(BOARD_SYSTEM_DLKMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/system_dlkm_erofs_compress_hints.txt
+	$(hide) cp --reflink=auto $(BOARD_SYSTEM_DLKMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/system_dlkm_erofs_compress_hints.txt
 endif
 ifneq ($(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
 	$(call fs_config,$(zip_root)/VENDOR_BOOT/RAMDISK,) > $(zip_root)/META/vendor_boot_filesystem_config.txt
@@ -7145,10 +7145,10 @@ ifdef BUILDING_SYSTEM_OTHER_IMAGE
 endif
 	@# Metadata for compatibility verification.
 ifdef BUILT_KERNEL_CONFIGS_FILE
-	$(hide) cp $(BUILT_KERNEL_CONFIGS_FILE) $(zip_root)/META/kernel_configs.txt
+	$(hide) cp --reflink=auto $(BUILT_KERNEL_CONFIGS_FILE) $(zip_root)/META/kernel_configs.txt
 endif
 ifdef BUILT_KERNEL_VERSION_FILE
-	$(hide) cp $(BUILT_KERNEL_VERSION_FILE) $(zip_root)/META/kernel_version.txt
+	$(hide) cp --reflink=auto $(BUILT_KERNEL_VERSION_FILE) $(zip_root)/META/kernel_version.txt
 endif
 	rm -rf $(zip_root)/META/dynamic_partitions_info.txt
 ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
