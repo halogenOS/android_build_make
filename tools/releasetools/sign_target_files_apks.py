@@ -187,6 +187,7 @@ import sys
 import shlex
 import tempfile
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from xml.etree import ElementTree
 
 import add_img_to_target_files
@@ -823,6 +824,16 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
   # verbatim file copies can be skipped entirely.
   in_place = (OPTIONS.dir_mode and input_tf_zip == output_tf_zip)
 
+  # Parallel signing: collect APK/APEX signing tasks, then execute them
+  # concurrently using a thread pool. The actual signing invokes external
+  # processes (signapk.jar, avbtool), so threads release the GIL while waiting.
+  num_workers = os.cpu_count() or 4
+
+  # Signing task descriptors collected during enumeration.
+  # Each entry is (type, filename, out_info, task_args).
+  apk_sign_tasks = []   # (filename, out_info, name, key, pw, is_compressed)
+  apex_sign_tasks = []  # (filename, data, payload_key, container_key, sign_tool)
+
   for info in _tf_enumerate(input_tf_zip):
     filename = info.filename
     if filename.startswith("IMAGES/"):
@@ -845,7 +856,7 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
           "        (skipped due to matching prefix)" % (filename,))
       _tf_write(output_tf_zip, out_info, data)
 
-    # Sign APKs.
+    # Queue APK signing.
     elif is_apk:
       name = os.path.basename(filename)
       if is_compressed:
@@ -854,9 +865,9 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
       key = apk_keys[name]
       if key not in common.SPECIAL_CERT_STRINGS:
         print("    signing: %-*s (%s)" % (maxsize, name, key))
-        signed_data = SignApk(data, key, key_passwords[key], platform_api_level,
-                              codename_to_api_level_map, is_compressed, name)
-        _tf_write(output_tf_zip, out_info, signed_data)
+        apk_sign_tasks.append(
+            (filename, out_info, name, data, key, key_passwords[key],
+             is_compressed))
       else:
         # an APK we're not supposed to sign.
         print(
@@ -864,7 +875,7 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
             "        (skipped due to special cert string)" % (name,))
         _tf_write(output_tf_zip, out_info, data)
 
-    # Sign bundled APEX files on all partitions
+    # Queue APEX signing.
     elif IsApexFile(filename):
       name = GetApexFilename(filename)
 
@@ -877,19 +888,8 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
             maxsize, name, container_key))
         print("           : %-*s payload   (%s)" % (
             maxsize, name, payload_key))
-
-        signed_apex = apex_utils.SignApex(
-            misc_info['avb_avbtool'],
-            data,
-            payload_key,
-            container_key,
-            key_passwords,
-            apk_keys,
-            codename_to_api_level_map,
-            no_hashtree=None,  # Let apex_util determine if hash tree is needed
-            signing_args=OPTIONS.avb_extra_args.get('apex'),
-            sign_tool=sign_tool)
-        _tf_copy(output_tf_zip, signed_apex, filename)
+        apex_sign_tasks.append(
+            (filename, data, payload_key, container_key, sign_tool))
 
       else:
         print(
@@ -1105,6 +1105,46 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
         continue
       except KeyError:
         common.ZipWriteStr(output_tf_zip, out_info, data)
+
+  # Execute APK and APEX signing in parallel.
+  total_sign_tasks = len(apk_sign_tasks) + len(apex_sign_tasks)
+  if total_sign_tasks > 0:
+    print("Signing %d APK(s) and %d APEX(es) with %d threads..." % (
+        len(apk_sign_tasks), len(apex_sign_tasks), num_workers))
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+      future_to_entry = {}
+
+      for task in apk_sign_tasks:
+        filename, out_info, name, data, key, pw, is_compressed = task
+        future = executor.submit(
+            SignApk, data, key, pw, platform_api_level,
+            codename_to_api_level_map, is_compressed, name)
+        future_to_entry[future] = ('apk', filename, out_info)
+
+      for task in apex_sign_tasks:
+        filename, data, payload_key, container_key, sign_tool = task
+        future = executor.submit(
+            apex_utils.SignApex,
+            misc_info['avb_avbtool'],
+            data,
+            payload_key,
+            container_key,
+            key_passwords,
+            apk_keys,
+            codename_to_api_level_map,
+            no_hashtree=None,
+            signing_args=OPTIONS.avb_extra_args.get('apex'),
+            sign_tool=sign_tool)
+        future_to_entry[future] = ('apex', filename, None)
+
+      for future in as_completed(future_to_entry):
+        entry_type, filename, out_info = future_to_entry[future]
+        result = future.result()
+        if entry_type == 'apk':
+          _tf_write(output_tf_zip, out_info, result)
+        else:
+          _tf_copy(output_tf_zip, result, filename)
+        print("      signed: %s" % os.path.basename(filename))
 
   if OPTIONS.replace_ota_keys:
     ReplaceOtaKeys(input_tf_zip, output_tf_zip, misc_info)
