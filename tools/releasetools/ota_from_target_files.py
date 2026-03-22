@@ -1079,6 +1079,16 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
     common.ZipWriteStr(output_zip, "apex_info.pb", ota_apex_info,
                        compress_type=zipfile.ZIP_STORED)
 
+  # Include the AVB public key so users can flash it to avb_custom_key
+  # and lock their bootloader with a custom root of trust.
+  avb_key_path = target_info.get("avb_vbmeta_key_path")
+  if target_info.get("avb_enable") == "true" and avb_key_path:
+    avbtool = target_info.get("avb_avbtool", "avbtool")
+    pkmd_path = common.ExtractAvbPublicKey(avbtool, avb_key_path)
+    common.ZipWrite(output_zip, pkmd_path, arcname="pkmd.bin",
+                    compress_type=zipfile.ZIP_STORED)
+    logger.info("Added pkmd.bin (AVB public key) to OTA package")
+
   # We haven't written the metadata entry yet, which will be handled in
   # FinalizeMetadata().
   common.ZipClose(output_zip)
