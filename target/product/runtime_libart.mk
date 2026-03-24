@@ -50,9 +50,6 @@ endif
 
 art_target_include_debug_build := $(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD)
 ifneq (false,$(art_target_include_debug_build))
-  ifneq (,$(filter eng,$(TARGET_BUILD_VARIANT)))
-    art_target_include_debug_build := true
-  endif
 endif
 
 ifeq (true,$(art_target_include_debug_build))
