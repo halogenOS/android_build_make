@@ -2047,7 +2047,8 @@ def main(argv):
     for img_name in ("system.img", "system_ext.img", "product.img",
                      "vendor.img", "odm.img", "vendor_dlkm.img",
                      "odm_dlkm.img", "system_dlkm.img",
-                     "vbmeta.img", "vbmeta_system.img"):
+                     "vbmeta.img", "vbmeta_system.img",
+                     "vbmeta_vendor.img", "recovery.img"):
       img_path = os.path.join(images_dir, img_name)
       if os.path.exists(img_path):
         logger.info("Removing stale %s for re-signing rebuild", img_name)
