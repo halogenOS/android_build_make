@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+$(call inherit-product, product/custom/config/base_product.mk)
+
 # Base modules and settings for the product partition.
 PRODUCT_PACKAGES += \
     build_flag_product \

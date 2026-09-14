@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+$(call inherit-product, product/custom/config/telephony_product.mk)
+
 # This is the list of modules that are specific to products that have telephony
 # hardware, and install to the product partition.
 

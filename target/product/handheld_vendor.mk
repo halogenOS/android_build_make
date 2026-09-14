@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+$(call inherit-product, product/custom/config/handheld_vendor.mk)
+
 # This makefile contains the non-system partition contents for
 # a generic phone or tablet device. Only add something here if
 # it definitely doesn't belong on other types of devices (if it

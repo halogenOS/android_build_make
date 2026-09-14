@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+$(call inherit-product, product/custom/config/base_system.mk)
+
 # Base modules and settings for the system partition.
 #
 # When adding a module to this list, you must also add it to the deps of the system_image_defaults
