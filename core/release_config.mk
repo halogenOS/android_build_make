@@ -48,12 +48,12 @@ endif
 # This logic is in make because starlark doesn't understand optional
 # vendor files.
 
-CUSTOM_DEVICE := $(shell echo "$(TARGET_PRODUCT)" | cut -d '_' -f2-)
+CUSTOM_DEVICE := $(TARGET_PRODUCT)
 
 # If this is a google source tree, restrict it to only the one file
 # which has OWNERS control.  If it isn't let others define their own.
 _protobuf_map_files := build/release/release_config_map.textproto \
-        $(wildcard $(CUSTOM_PRODUCT_DIR)/release/release_config_map.textproto) \
+        $(wildcard product/custom/release/release_config_map.textproto) \
         $(wildcard device/$(CUSTOM_DEVICE)/release/release_config_map.textproto) \
         $(wildcard device/*/$(CUSTOM_DEVICE)/release/release_config_map.textproto)
 
