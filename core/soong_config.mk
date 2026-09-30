@@ -375,6 +375,7 @@ _config_enable_uffd_gc := \
 $(call add_json_str, EnableUffdGc, $(_config_enable_uffd_gc))
 _config_enable_uffd_gc :=
 $(call add_json_str, BoardKernelVersion, $(BOARD_KERNEL_VERSION))
+$(call add_json_str, BoardKernelBuildModule, $(BOARD_KERNEL_BUILD_MODULE))
 
 $(call add_json_list, DeviceFrameworkCompatibilityMatrixFile, $(DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE))
 $(call add_json_list, DeviceProductCompatibilityMatrixFile, $(DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE))

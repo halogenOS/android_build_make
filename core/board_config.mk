@@ -42,6 +42,7 @@ _board_strip_readonly_list += TARGET_NO_BOOTLOADER
 _board_strip_readonly_list += TARGET_NO_KERNEL
 _board_strip_readonly_list += TARGET_NO_RECOVERY
 _board_strip_readonly_list += TARGET_NO_RADIOIMAGE
+_board_strip_readonly_list += BOARD_KERNEL_BUILD_MODULE
 _board_strip_readonly_list += TARGET_HARDWARE_3D
 _board_strip_readonly_list += WITH_DEXPREOPT
 
@@ -322,6 +323,22 @@ ifdef TARGET_2ND_ARCH
 endif
 
 .KATI_READONLY := $(_board_strip_readonly_list)
+
+# BOARD_KERNEL_BUILD_MODULE names the Soong module that builds the device's kernel and installs
+# $(PRODUCT_OUT)/kernel, and dtb.img when BOARD_INCLUDE_DTB_IN_BOOTIMG is set.
+# The dtb check comes first: the GSI board configuration, which the emulator boards include, sets
+# TARGET_NO_KERNEL to true, so on such a board the other check would stop the build before an empty
+# dtb flag is named.
+ifneq ($(BOARD_KERNEL_BUILD_MODULE),)
+  ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+    ifeq ($(strip $(BOARD_INCLUDE_DTB_IN_BOOTIMG)),)
+      $(error BOARD_KERNEL_BUILD_MODULE is set to $(BOARD_KERNEL_BUILD_MODULE), but BOARD_INCLUDE_DTB_IN_BOOTIMG is defined with a value that is empty once expanded: core/Makefile would name a dtb.img that the module does not install)
+    endif
+  endif
+  ifeq ($(TARGET_NO_KERNEL),true)
+    $(error BOARD_KERNEL_BUILD_MODULE is set to $(BOARD_KERNEL_BUILD_MODULE), but TARGET_NO_KERNEL is true: the images would carry no kernel while the module installs one)
+  endif
+endif
 
 INTERNAL_KERNEL_CMDLINE := $(BOARD_KERNEL_CMDLINE)
 ifneq (,$(BOARD_BOOTCONFIG)$(BOARD_BOOTCONFIG_FILE))
