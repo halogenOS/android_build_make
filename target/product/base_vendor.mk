@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+$(call inherit-product, product/custom/config/base_vendor.mk)
+
 # Base modules and settings for recovery.
 PRODUCT_PACKAGES += \
     adbd.recovery \
