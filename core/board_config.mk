@@ -293,6 +293,13 @@ ifneq ($(MALLOC_IMPL),)
 endif
 board_config_mk :=
 
+# The product layer reads the LineageOS-style kernel variables of the board and sets
+# BOARD_KERNEL_BUILD_MODULE from them, before the board variables are stripped and made read-only.
+include product/custom/config/BoardConfigKernel.mk
+# The rules of a user build in the product layer check BOARD_KERNEL_BUILD_MODULE as the device and
+# BoardConfigKernel.mk set it.
+include product/custom/config/BoardConfigUserBuild.mk
+
 # Clean up and verify BoardConfig variables
 $(foreach var,$(_board_strip_readonly_list),$(eval $(var) := $$(strip $$($(var)))))
 $(foreach var,$(_board_strip_list),$(eval $(var) := $$(strip $$($(var)))))
