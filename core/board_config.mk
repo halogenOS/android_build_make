@@ -237,8 +237,10 @@ else
       device/generic/goldfish/board/$(TARGET_DEVICE)/BoardConfig.mk \
       device/google/cuttlefish/board/$(TARGET_DEVICE)/BoardConfig.mk \
       vendor/google/products/cuttlefish/pixel_watch/board/$(TARGET_DEVICE)/BoardConfig.mk \
-      $(shell test -d device && find -L device -maxdepth 4 -path '*/$(TARGET_DEVICE)/BoardConfig.mk') \
-      $(shell test -d vendor && find -L vendor -maxdepth 4 -path '*/$(TARGET_DEVICE)/BoardConfig.mk') \
+      $(foreach top,device vendor, \
+        $(top)/$(TARGET_DEVICE)/BoardConfig.mk \
+        $(top)/*/$(TARGET_DEVICE)/BoardConfig.mk \
+        $(top)/*/*/$(TARGET_DEVICE)/BoardConfig.mk) \
     ))
   ifeq ($(board_config_mk),)
     $(error No config file found for TARGET_DEVICE $(TARGET_DEVICE))
