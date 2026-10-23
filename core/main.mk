@@ -51,6 +51,14 @@ $(KATI_obsolete_var FILE_NAME_TAG,https://android.googlesource.com/platform/buil
 DATE_FROM_FILE := date -d @$(BUILD_DATETIME_FROM_FILE)
 .KATI_READONLY := DATE_FROM_FILE
 
+# keys_dir contains the keys of every step that signs: links to the test keys
+# in a regular build, the release keys in a signing build. Kati cannot write a
+# Ninja variable into a command, so a step reads keys_dir when it runs, from a
+# file that Soong writes when keys_dir changes. A step that reads it lists
+# $(SOONG_KEYS_DIR_VALUE_FILE) as a prerequisite.
+KEYS_DIR_FROM_FILE := $$(cat $(SOONG_KEYS_DIR_VALUE_FILE))
+.KATI_READONLY := KEYS_DIR_FROM_FILE
+
 
 # Make an empty directory, which can be used to make empty jars
 EMPTY_DIRECTORY := $(OUT_DIR)/empty

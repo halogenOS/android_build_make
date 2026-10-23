@@ -938,7 +938,28 @@ $(call dist-for-goals,droidcore,$(CERTIFICATE_VIOLATION_MODULES_FILENAME))
 # for future OTA packages installed by this system.  Actual product
 # deliverables will be re-signed by hand.  We expect this file to
 # exist with the suffixes ".x509.pem" and ".pk8".
-DEFAULT_KEY_CERT_PAIR := $(strip $(DEFAULT_SYSTEM_DEV_CERTIFICATE))
+DEFAULT_KEY_CERT_PAIR := $(KEYS_DIR_FROM_FILE)/$(SOONG_KEYS_DIR_RELEASE_KEY)
+
+# $(1): an AVB algorithm such as SHA256_RSA4096
+# Returns the RSA key size of the algorithm.
+avb-rsa-key-size = $(if $(findstring _RSA,$(1)),$(lastword $(subst _RSA, ,$(1))),\
+  $(error The AVB algorithm "$(1)" does not give an RSA key size))
+
+# keys_dir has one AVB key of each RSA key size.
+# $(1): an AVB algorithm such as SHA256_RSA4096
+# Returns the name in keys_dir of the AVB key with the RSA key size of the algorithm.
+keys-dir-avb-key-name = $(patsubst %,$(SOONG_KEYS_DIR_AVB_KEY),$(call avb-rsa-key-size,$(1)))
+
+# $(1): the AVB key path set by the board for a partition
+# $(2): the AVB algorithm of that key
+# Returns the AVB key path of the board.
+board-avb-key = $(1)
+
+# $(1): the AVB key path set by the board for a partition
+# $(2): the AVB algorithm of that key
+# Returns the AVB key in keys_dir with the RSA key size of the algorithm, which
+# links to the key of the board in a regular build.
+keys-dir-avb-key = $(KEYS_DIR_FROM_FILE)/$(call keys-dir-avb-key-name,$(2))
 
 
 # Rules that need to be present for the all targets, even
@@ -2203,6 +2224,15 @@ endef
 # $(2): a subset of "system vendor cache userdata product system_ext oem odm vendor_dlkm odm_dlkm system_dlkm"
 # $(3): additional "key=value" pairs to append to the dictionary file.
 define generate-image-prop-dictionary
+$(call generate-image-prop-dictionary-with-avb-keys,$(1),$(2),$(3),board-avb-key)
+endef
+
+# $(1): the path of the output dictionary file
+# $(2): a subset of "system vendor cache userdata product system_ext oem odm vendor_dlkm odm_dlkm system_dlkm"
+# $(3): additional "key=value" pairs to append to the dictionary file.
+# $(4): the function that returns the AVB key path written for a partition,
+#       called with the key path set by the board and its algorithm
+define generate-image-prop-dictionary-with-avb-keys
 $(if $(filter $(2),system),\
     $(if $(INTERNAL_SYSTEM_OTHER_PARTITION_SIZE),$(hide) echo "system_other_size=$(INTERNAL_SYSTEM_OTHER_PARTITION_SIZE)" >> $(1))
     $(if $(PRODUCT_SYSTEM_HEADROOM),$(hide) echo "system_headroom=$(PRODUCT_SYSTEM_HEADROOM)" >> $(1))
@@ -2289,63 +2319,63 @@ $(if $(BOARD_AVB_ENABLE), \
     $(hide) echo "avb_system_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_system_add_hashtree_footer_args=$(BOARD_AVB_SYSTEM_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_SYSTEM_KEY_PATH), \
-      $(hide) echo "avb_system_key_path=$(BOARD_AVB_SYSTEM_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_system_key_path=$(call $(4),$(BOARD_AVB_SYSTEM_KEY_PATH),$(BOARD_AVB_SYSTEM_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_system_algorithm=$(BOARD_AVB_SYSTEM_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_system_rollback_index_location=$(BOARD_AVB_SYSTEM_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
   $(if $(filter $(2),system_other), \
     $(hide) echo "avb_system_other_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_system_other_add_hashtree_footer_args=$(BOARD_AVB_SYSTEM_OTHER_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH)$(BOARD_AVB_SYSTEM_KEY_PATH),\
-      $(hide) echo "avb_system_other_key_path=$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH) $(BOARD_AVB_SYSTEM_KEY_PATH))" >> $(1)$(newline)) \
+      $(hide) echo "avb_system_other_key_path=$(call $(4),$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH) $(BOARD_AVB_SYSTEM_KEY_PATH)),$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM) $(BOARD_AVB_SYSTEM_ALGORITHM)))" >> $(1)$(newline)) \
     $(if $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM)$(BOARD_AVB_SYSTEM_ALGORITHM),\
       $(hide) echo "avb_system_other_algorithm=$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM) $(BOARD_AVB_SYSTEM_ALGORITHM))" >> $(1)$(newline))) \
   $(if $(filter $(2),vendor), \
     $(hide) echo "avb_vendor_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_vendor_add_hashtree_footer_args=$(BOARD_AVB_VENDOR_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_VENDOR_KEY_PATH),\
-      $(hide) echo "avb_vendor_key_path=$(BOARD_AVB_VENDOR_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_vendor_key_path=$(call $(4),$(BOARD_AVB_VENDOR_KEY_PATH),$(BOARD_AVB_VENDOR_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_vendor_algorithm=$(BOARD_AVB_VENDOR_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_vendor_rollback_index_location=$(BOARD_AVB_VENDOR_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
   $(if $(filter $(2),product), \
     $(hide) echo "avb_product_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_product_add_hashtree_footer_args=$(BOARD_AVB_PRODUCT_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_PRODUCT_KEY_PATH),\
-      $(hide) echo "avb_product_key_path=$(BOARD_AVB_PRODUCT_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_product_key_path=$(call $(4),$(BOARD_AVB_PRODUCT_KEY_PATH),$(BOARD_AVB_PRODUCT_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_product_algorithm=$(BOARD_AVB_PRODUCT_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_product_rollback_index_location=$(BOARD_AVB_PRODUCT_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
   $(if $(filter $(2),system_ext), \
     $(hide) echo "avb_system_ext_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_system_ext_add_hashtree_footer_args=$(BOARD_AVB_SYSTEM_EXT_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_SYSTEM_EXT_KEY_PATH),\
-      $(hide) echo "avb_system_ext_key_path=$(BOARD_AVB_SYSTEM_EXT_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_system_ext_key_path=$(call $(4),$(BOARD_AVB_SYSTEM_EXT_KEY_PATH),$(BOARD_AVB_SYSTEM_EXT_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_system_ext_algorithm=$(BOARD_AVB_SYSTEM_EXT_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_system_ext_rollback_index_location=$(BOARD_AVB_SYSTEM_EXT_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
   $(if $(filter $(2),odm), \
     $(hide) echo "avb_odm_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_odm_add_hashtree_footer_args=$(BOARD_AVB_ODM_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_ODM_KEY_PATH),\
-      $(hide) echo "avb_odm_key_path=$(BOARD_AVB_ODM_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_odm_key_path=$(call $(4),$(BOARD_AVB_ODM_KEY_PATH),$(BOARD_AVB_ODM_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_odm_algorithm=$(BOARD_AVB_ODM_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_odm_rollback_index_location=$(BOARD_AVB_ODM_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
   $(if $(filter $(2),vendor_dlkm), \
     $(hide) echo "avb_vendor_dlkm_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_vendor_dlkm_add_hashtree_footer_args=$(BOARD_AVB_VENDOR_DLKM_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_VENDOR_DLKM_KEY_PATH),\
-      $(hide) echo "avb_vendor_dlkm_key_path=$(BOARD_AVB_VENDOR_DLKM_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_vendor_dlkm_key_path=$(call $(4),$(BOARD_AVB_VENDOR_DLKM_KEY_PATH),$(BOARD_AVB_VENDOR_DLKM_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_vendor_dlkm_algorithm=$(BOARD_AVB_VENDOR_DLKM_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_vendor_dlkm_rollback_index_location=$(BOARD_AVB_VENDOR_DLKM_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
   $(if $(filter $(2),odm_dlkm), \
     $(hide) echo "avb_odm_dlkm_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_odm_dlkm_add_hashtree_footer_args=$(BOARD_AVB_ODM_DLKM_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_ODM_DLKM_KEY_PATH),\
-      $(hide) echo "avb_odm_dlkm_key_path=$(BOARD_AVB_ODM_DLKM_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_odm_dlkm_key_path=$(call $(4),$(BOARD_AVB_ODM_DLKM_KEY_PATH),$(BOARD_AVB_ODM_DLKM_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_odm_dlkm_algorithm=$(BOARD_AVB_ODM_DLKM_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_odm_dlkm_rollback_index_location=$(BOARD_AVB_ODM_DLKM_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
   $(if $(filter $(2),system_dlkm), \
     $(hide) echo "avb_system_dlkm_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_system_dlkm_add_hashtree_footer_args=$(BOARD_AVB_SYSTEM_DLKM_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
     $(if $(BOARD_AVB_SYSTEM_DLKM_KEY_PATH),\
-      $(hide) echo "avb_system_dlkm_key_path=$(BOARD_AVB_SYSTEM_DLKM_KEY_PATH)" >> $(1)$(newline) \
+      $(hide) echo "avb_system_dlkm_key_path=$(call $(4),$(BOARD_AVB_SYSTEM_DLKM_KEY_PATH),$(BOARD_AVB_SYSTEM_DLKM_ALGORITHM))" >> $(1)$(newline) \
       $(hide) echo "avb_system_dlkm_algorithm=$(BOARD_AVB_SYSTEM_DLKM_ALGORITHM)" >> $(1)$(newline) \
       $(hide) echo "avb_system_dlkm_rollback_index_location=$(BOARD_SYSTEM_SYSTEM_DLKM_ROLLBACK_INDEX_LOCATION)" >> $(1)$(newline))) \
 )
@@ -2397,7 +2427,7 @@ ifdef BUILDING_SYSTEM_DLKM_IMAGE
   PROP_DICTIONARY_IMAGES += system_dlkm
 endif
 define generate-userimage-prop-dictionary
-  $(call generate-image-prop-dictionary,$(1),$(PROP_DICTIONARY_IMAGES),$(2))
+  $(call generate-image-prop-dictionary-with-avb-keys,$(1),$(PROP_DICTIONARY_IMAGES),$(2),keys-dir-avb-key)
 endef
 
 # $(1): the path of the input dictionary file, where each line has the format key=value
@@ -3468,7 +3498,7 @@ $(1): PRIVATE_ASSETS := $(call intermediates-dir-for,ETC,build_manifest-$(2))/as
 $(1): $(HOST_OUT_EXECUTABLES)/fsverity_manifest_generator \
     $(HOST_OUT_EXECUTABLES)/fsverity $(HOST_OUT_EXECUTABLES)/aapt2 \
     $(HOST_OUT_EXECUTABLES)/apksigner $(FSVERITY_APK_MANIFEST_TEMPLATE_PATH) \
-    $(FSVERITY_APK_KEY_PATH).x509.pem $(FSVERITY_APK_KEY_PATH).pk8 \
+    $(FSVERITY_APK_KEY_PATH).x509.pem $(FSVERITY_APK_KEY_PATH).pk8 $(SOONG_KEYS_DIR_VALUE_FILE) \
     $(call intermediates-dir-for,APPS,framework-res,,COMMON)/package-export.apk \
     $$(fsverity-metadata-targets-$(2))
 	rm -rf $$(PRIVATE_ASSETS)
@@ -3486,8 +3516,8 @@ $(1): $(HOST_OUT_EXECUTABLES)/fsverity_manifest_generator \
 	    --manifest $$(PRIVATE_MANIFEST) \
             --rename-manifest-package com.android.security.fsverity_metadata.$(2)
 	$$(PRIVATE_APKSIGNER) sign --in $$@ \
-	    --cert $$(PRIVATE_KEY).x509.pem \
-	    --key $$(PRIVATE_KEY).pk8
+	    --cert $$(call keys-dir-key-file,$$(PRIVATE_KEY).x509.pem) \
+	    --key $$(call keys-dir-key-file,$$(PRIVATE_KEY).pk8)
 
 $(1).idsig: $(1)
 
@@ -4804,11 +4834,14 @@ BOARD_AVB_SYSTEM_OTHER_KEY_PATH := $(BOARD_AVB_KEY_PATH)
 BOARD_AVB_SYSTEM_OTHER_ALGORITHM := $(BOARD_AVB_ALGORITHM)
 endif
 
-$(INSTALLED_PRODUCT_SYSTEM_OTHER_AVBKEY_TARGET): $(AVBTOOL) $(BOARD_AVB_SYSTEM_OTHER_KEY_PATH)
+$(INSTALLED_PRODUCT_SYSTEM_OTHER_AVBKEY_TARGET): $(AVBTOOL) $(SOONG_KEYS_DIR_VALUE_FILE) \
+    $(SOONG_TEST_KEYS_DIR)/$(call keys-dir-avb-key-name,$(BOARD_AVB_SYSTEM_OTHER_ALGORITHM))
 	@echo Extracting system_other avb key: $@
 	@rm -f $@
 	@mkdir -p $(dir $@)
-	$(AVBTOOL) extract_public_key --key $(BOARD_AVB_SYSTEM_OTHER_KEY_PATH) --output $@
+	$(AVBTOOL) extract_public_key \
+	    --key $(call keys-dir-avb-key,$(BOARD_AVB_SYSTEM_OTHER_KEY_PATH),$(BOARD_AVB_SYSTEM_OTHER_ALGORITHM)) \
+	    --output $@
 
 $(eval $(call declare-0p-target,$(INSTALLED_PRODUCT_SYSTEM_OTHER_AVBKEY_TARGET),))
 
@@ -4818,6 +4851,34 @@ endif
 
 BOARD_AVB_SYSTEM_OTHER_ADD_HASHTREE_FOOTER_ARGS += --rollback_index $(BOARD_AVB_SYSTEM_OTHER_ROLLBACK_INDEX)
 endif # end of AVB for BUILDING_SYSTEM_OTHER_IMAGE
+
+# In a regular build, the test-key directory links the name in keys_dir of the
+# AVB key of each RSA key size to the key that the board uses for that size.
+# $(1): an AVB key path set by the board
+# $(2): the AVB algorithm of that key
+define add-test-keys-avb-key
+$(eval _name := $(call keys-dir-avb-key-name,$(2)))
+$(if $(filter-out $(1),$(TEST_KEYS_AVB_KEY.$(_name))),\
+  $(error keys_dir has one AVB key of each RSA key size, but the board uses $(TEST_KEYS_AVB_KEY.$(_name)) and $(1) for $(_name)))
+$(eval TEST_KEYS_AVB_KEY.$(_name) := $(1))
+$(eval TEST_KEYS_AVB_KEY_NAMES := $(sort $(TEST_KEYS_AVB_KEY_NAMES) $(_name)))
+endef
+
+# Every AVB key in misc_info.txt is in a variable <prefix>KEY_PATH, with its
+# algorithm in <prefix>ALGORITHM.
+$(foreach prefix,BOARD_AVB_ PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ \
+    $(foreach partition,BOOT INIT_BOOT VENDOR_BOOT VENDOR_KERNEL_BOOT RECOVERY DTBO PVMFW \
+        SYSTEM SYSTEM_OTHER VENDOR PRODUCT SYSTEM_EXT ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM \
+        VBMETA_SYSTEM VBMETA_VENDOR \
+        $(call to-upper,$(BOARD_AVB_CUSTOMIMAGES_PARTITION_LIST) \
+            $(addprefix vbmeta_,$(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS))),\
+      BOARD_AVB_$(partition)_),\
+  $(if $($(prefix)KEY_PATH),$(call add-test-keys-avb-key,$($(prefix)KEY_PATH),$($(prefix)ALGORITHM))))
+
+TEST_KEYS_AVB_KEY_LINKS := $(addprefix $(SOONG_TEST_KEYS_DIR)/,$(TEST_KEYS_AVB_KEY_NAMES))
+$(foreach name,$(TEST_KEYS_AVB_KEY_NAMES),\
+  $(call symlink-file,$(TEST_KEYS_AVB_KEY.$(name)),$(abspath $(TEST_KEYS_AVB_KEY.$(name))),\
+    $(SOONG_TEST_KEYS_DIR)/$(name)))
 
 INTERNAL_AVB_PARTITIONS_IN_CHAINED_VBMETA_IMAGES := \
     $(BOARD_AVB_VBMETA_SYSTEM) \
@@ -6084,7 +6145,7 @@ define misc_boot_size
 $(subst .img,_size,$(1))=$(BOARD_KERNEL$(call to-upper,$(subst boot,,$(subst .img,,$(1))))_BOOTIMAGE_PARTITION_SIZE)
 endef
 
-$(INSTALLED_MISC_INFO_TARGET):
+$(INSTALLED_MISC_INFO_TARGET): $(SOONG_KEYS_DIR_VALUE_FILE) $(TEST_KEYS_AVB_KEY_LINKS)
 	rm -f $@
 	$(call pretty,"Target misc_info.txt: $@")
 	$(hide) echo "recovery_api_version=$(RECOVERY_API_VERSION)" >> $@
@@ -6135,7 +6196,7 @@ else
 	$(hide) echo "recovery_mount_options=$(DEFAULT_TARGET_RECOVERY_FSTYPE_MOUNT_OPTIONS)" >> $@
 endif
 	$(hide) echo "tool_extensions=$(tool_extensions)" >> $@
-	$(hide) echo "default_system_dev_certificate=$(DEFAULT_SYSTEM_DEV_CERTIFICATE)" >> $@
+	$(hide) echo "default_system_dev_certificate=$(DEFAULT_KEY_CERT_PAIR)" >> $@
 ifdef PRODUCT_EXTRA_OTA_KEYS
 	$(hide) echo "extra_ota_keys=$(PRODUCT_EXTRA_OTA_KEYS)" >> $@
 endif
@@ -6170,36 +6231,36 @@ ifeq ($(BUILDING_VBMETA_IMAGE),true)
 	$(hide) echo "avb_building_vbmeta_image=true" >> $@
 endif # BUILDING_VBMETA_IMAGE
 	$(hide) echo "avb_enable=true" >> $@
-	$(hide) echo "avb_vbmeta_key_path=$(BOARD_AVB_KEY_PATH)" >> $@
+	$(hide) echo "avb_vbmeta_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_KEY_PATH),$(BOARD_AVB_ALGORITHM))" >> $@
 	$(hide) echo "avb_vbmeta_algorithm=$(BOARD_AVB_ALGORITHM)" >> $@
 	$(hide) echo "avb_vbmeta_args=$(BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS)" >> $@
 	$(hide) echo "avb_boot_add_hash_footer_args=$(BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS)" >> $@
 ifdef BOARD_AVB_BOOT_KEY_PATH
-	$(hide) echo "avb_boot_key_path=$(BOARD_AVB_BOOT_KEY_PATH)" >> $@
+	$(hide) echo "avb_boot_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_BOOT_KEY_PATH),$(BOARD_AVB_BOOT_ALGORITHM))" >> $@
 	$(hide) echo "avb_boot_algorithm=$(BOARD_AVB_BOOT_ALGORITHM)" >> $@
 	$(hide) echo "avb_boot_rollback_index_location=$(BOARD_AVB_BOOT_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_BOOT_KEY_PATH
 	$(hide) echo "avb_init_boot_add_hash_footer_args=$(BOARD_AVB_INIT_BOOT_ADD_HASH_FOOTER_ARGS)" >> $@
 ifdef BOARD_AVB_INIT_BOOT_KEY_PATH
-	$(hide) echo "avb_init_boot_key_path=$(BOARD_AVB_INIT_BOOT_KEY_PATH)" >> $@
+	$(hide) echo "avb_init_boot_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_INIT_BOOT_KEY_PATH),$(BOARD_AVB_INIT_BOOT_ALGORITHM))" >> $@
 	$(hide) echo "avb_init_boot_algorithm=$(BOARD_AVB_INIT_BOOT_ALGORITHM)" >> $@
 	$(hide) echo "avb_init_boot_rollback_index_location=$(BOARD_AVB_INIT_BOOT_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_INIT_BOOT_KEY_PATH
 	echo "avb_vendor_boot_add_hash_footer_args=$(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)" >> $@
 ifdef BOARD_AVB_VENDOR_BOOT_KEY_PATH
-	echo "avb_vendor_boot_key_path=$(BOARD_AVB_VENDOR_BOOT_KEY_PATH)" >> $@
+	echo "avb_vendor_boot_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(BOARD_AVB_VENDOR_BOOT_ALGORITHM))" >> $@
 	echo "avb_vendor_boot_algorithm=$(BOARD_AVB_VENDOR_BOOT_ALGORITHM)" >> $@
 	echo "avb_vendor_boot_rollback_index_location=$(BOARD_AVB_VENDOR_BOOT_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_VENDOR_BOOT_KEY_PATH
 	echo "avb_vendor_kernel_boot_add_hash_footer_args=$(BOARD_AVB_VENDOR_KERNEL_BOOT_ADD_HASH_FOOTER_ARGS)" >> $@
 ifdef BOARD_AVB_VENDOR_KERNEL_BOOT_KEY_PATH
-	echo "avb_vendor_kernel_boot_key_path=$(BOARD_AVB_VENDOR_KERNEL_BOOT_KEY_PATH)" >> $@
+	echo "avb_vendor_kernel_boot_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_VENDOR_KERNEL_BOOT_KEY_PATH),$(BOARD_AVB_VENDOR_KERNEL_BOOT_ALGORITHM))" >> $@
 	echo "avb_vendor_kernel_boot_algorithm=$(BOARD_AVB_VENDOR_KERNEL_BOOT_ALGORITHM)" >> $@
 	echo "avb_vendor_kernel_boot_rollback_index_location=$(BOARD_AVB_VENDOR_KERNEL_BOOT_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_VENDOR_KERNEL_BOOT_KEY_PATH
 	$(hide) echo "avb_recovery_add_hash_footer_args=$(BOARD_AVB_RECOVERY_ADD_HASH_FOOTER_ARGS)" >> $@
 ifdef BOARD_AVB_RECOVERY_KEY_PATH
-	$(hide) echo "avb_recovery_key_path=$(BOARD_AVB_RECOVERY_KEY_PATH)" >> $@
+	$(hide) echo "avb_recovery_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_RECOVERY_KEY_PATH),$(BOARD_AVB_RECOVERY_ALGORITHM))" >> $@
 	$(hide) echo "avb_recovery_algorithm=$(BOARD_AVB_RECOVERY_ALGORITHM)" >> $@
 	$(hide) echo "avb_recovery_rollback_index_location=$(BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_RECOVERY_KEY_PATH
@@ -6211,7 +6272,7 @@ endif # BOARD_CUSTOMIMAGES_PARTITION_LIST
 ifneq (,$(strip $(BOARD_AVB_CUSTOMIMAGES_PARTITION_LIST)))
 	$(hide) echo "avb_custom_images_partition_list=$(BOARD_AVB_CUSTOMIMAGES_PARTITION_LIST)" >> $@
 	$(hide) $(foreach partition,$(BOARD_AVB_CUSTOMIMAGES_PARTITION_LIST), \
-	    echo "avb_$(partition)_key_path=$(BOARD_AVB_$(call to-upper,$(partition))_KEY_PATH)"  >> $@; \
+	    echo "avb_$(partition)_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_$(call to-upper,$(partition))_KEY_PATH),$(BOARD_AVB_$(call to-upper,$(partition))_ALGORITHM))"  >> $@; \
 	    echo "avb_$(partition)_algorithm=$(BOARD_AVB_$(call to-upper,$(partition))_ALGORITHM)"  >> $@; \
 	    echo "avb_$(partition)_add_hashtree_footer_args=$(BOARD_AVB_$(call to-upper,$(partition))_ADD_HASHTREE_FOOTER_ARGS)"  >> $@; \
 	    echo "avb_$(partition)_rollback_index_location=$(BOARD_AVB_$(call to-upper,$(partition))_ROLLBACK_INDEX_LOCATION)"  >> $@; \
@@ -6221,14 +6282,14 @@ endif # BOARD_AVB_CUSTOMIMAGES_PARTITION_LIST
 ifneq (,$(strip $(BOARD_AVB_VBMETA_SYSTEM)))
 	$(hide) echo "avb_vbmeta_system=$(BOARD_AVB_VBMETA_SYSTEM)" >> $@
 	$(hide) echo "avb_vbmeta_system_args=$(BOARD_AVB_MAKE_VBMETA_SYSTEM_IMAGE_ARGS)" >> $@
-	$(hide) echo "avb_vbmeta_system_key_path=$(BOARD_AVB_VBMETA_SYSTEM_KEY_PATH)" >> $@
+	$(hide) echo "avb_vbmeta_system_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_VBMETA_SYSTEM_KEY_PATH),$(BOARD_AVB_VBMETA_SYSTEM_ALGORITHM))" >> $@
 	$(hide) echo "avb_vbmeta_system_algorithm=$(BOARD_AVB_VBMETA_SYSTEM_ALGORITHM)" >> $@
 	$(hide) echo "avb_vbmeta_system_rollback_index_location=$(BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_VBMETA_SYSTEM
 ifneq (,$(strip $(BOARD_AVB_VBMETA_VENDOR)))
 	$(hide) echo "avb_vbmeta_vendor=$(BOARD_AVB_VBMETA_VENDOR)" >> $@
 	$(hide) echo "avb_vbmeta_vendor_args=$(BOARD_AVB_MAKE_VBMETA_VENDOR_IMAGE_ARGS)" >> $@
-	$(hide) echo "avb_vbmeta_vendor_key_path=$(BOARD_AVB_VBMETA_VENDOR_KEY_PATH)" >> $@
+	$(hide) echo "avb_vbmeta_vendor_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_VBMETA_VENDOR_KEY_PATH),$(BOARD_AVB_VBMETA_VENDOR_ALGORITHM))" >> $@
 	$(hide) echo "avb_vbmeta_vendor_algorithm=$(BOARD_AVB_VBMETA_VENDOR_ALGORITHM)" >> $@
 	$(hide) echo "avb_vbmeta_vendor_rollback_index_location=$(BOARD_AVB_VBMETA_VENDOR_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_VBMETA_VENDOR_KEY_PATH
@@ -6237,7 +6298,7 @@ ifneq (,$(strip $(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS)))
 	$(hide) $(foreach partition,$(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS),\
 	echo "avb_vbmeta_$(partition)=$(BOARD_AVB_VBMETA_$(call to-upper,$(partition)))" >> $@ ;\
 	echo "avb_vbmeta_$(partition)_args=$(BOARD_AVB_MAKE_VBMETA_$(call to-upper,$(partition))_IMAGE_ARGS)" >> $@ ;\
-	echo "avb_vbmeta_$(partition)_key_path=$(BOARD_AVB_VBMETA_$(call to-upper,$(partition))_KEY_PATH)" >> $@ ;\
+	echo "avb_vbmeta_$(partition)_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_VBMETA_$(call to-upper,$(partition))_KEY_PATH),$(BOARD_AVB_VBMETA_$(call to-upper,$(partition))_ALGORITHM))" >> $@ ;\
 	echo "avb_vbmeta_$(partition)_algorithm=$(BOARD_AVB_VBMETA_$(call to-upper,$(partition))_ALGORITHM)" >> $@ ;\
 	echo "avb_vbmeta_$(partition)_rollback_index_location=$(BOARD_AVB_VBMETA_$(call to-upper,$(partition))_ROLLBACK_INDEX_LOCATION)" >> $@ ;)
 endif # BOARD_AVB_VBMETA_CUSTOM_PARTITIONS
@@ -6260,7 +6321,7 @@ ifeq ($(BOARD_AVB_ENABLE),true)
 	$(hide) echo "dtbo_size=$(BOARD_DTBOIMG_PARTITION_SIZE)" >> $@
 	$(hide) echo "avb_dtbo_add_hash_footer_args=$(BOARD_AVB_DTBO_ADD_HASH_FOOTER_ARGS)" >> $@
 ifdef BOARD_AVB_DTBO_KEY_PATH
-	$(hide) echo "avb_dtbo_key_path=$(BOARD_AVB_DTBO_KEY_PATH)" >> $@
+	$(hide) echo "avb_dtbo_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_DTBO_KEY_PATH),$(BOARD_AVB_DTBO_ALGORITHM))" >> $@
 	$(hide) echo "avb_dtbo_algorithm=$(BOARD_AVB_DTBO_ALGORITHM)" >> $@
 	$(hide) echo "avb_dtbo_rollback_index_location=$(BOARD_AVB_DTBO_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_DTBO_KEY_PATH
@@ -6272,7 +6333,7 @@ ifeq ($(BOARD_AVB_ENABLE),true)
 	$(hide) echo "pvmfw_size=$(BOARD_PVMFWIMAGE_PARTITION_SIZE)" >> $@
 	$(hide) echo "avb_pvmfw_add_hash_footer_args=$(BOARD_AVB_PVMFW_ADD_HASH_FOOTER_ARGS)" >> $@
 ifdef BOARD_AVB_PVMFW_KEY_PATH
-	$(hide) echo "avb_pvmfw_key_path=$(BOARD_AVB_PVMFW_KEY_PATH)" >> $@
+	$(hide) echo "avb_pvmfw_key_path=$(call keys-dir-avb-key,$(BOARD_AVB_PVMFW_KEY_PATH),$(BOARD_AVB_PVMFW_ALGORITHM))" >> $@
 	$(hide) echo "avb_pvmfw_algorithm=$(BOARD_AVB_PVMFW_ALGORITHM)" >> $@
 	$(hide) echo "avb_pvmfw_rollback_index_location=$(BOARD_AVB_PVMFW_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_PVMFW_KEY_PATH
@@ -6707,6 +6768,8 @@ $(BUILT_TARGET_FILES_DIR): \
 	    $(LPMAKE) \
 	    $(SELINUX_FC) \
 	    $(INSTALLED_MISC_INFO_TARGET) \
+	    $(SOONG_KEYS_DIR_IS_TEST_KEYS_FILE) \
+	    $(SET_RELEASE_TAGS) \
 	    $(INSTALLED_FASTBOOT_INFO_TARGET) \
 	    $(APKCERTS_FILE) \
 	    $(APEX_KEYS_FILE) \
@@ -7184,6 +7247,9 @@ endif
 ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
 	$(call dump-dynamic-partitions-info, $(zip_root)/META/dynamic_partitions_info.txt)
 endif
+	if [ "$$(cat $(SOONG_KEYS_DIR_IS_TEST_KEYS_FILE))" = false ]; then \
+	    $(SET_RELEASE_TAGS) $(zip_root); \
+	fi
 	PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH MKBOOTIMG=$(MKBOOTIMG) \
 	    $(ADD_IMG_TO_TARGET_FILES) -a -v -p $(HOST_OUT) $(zip_root)
 ifeq ($(BUILD_QEMU_IMAGES),true)
@@ -7290,8 +7356,10 @@ $(call declare-0p-target,$(INTERNAL_OTA_METADATA))
 
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 $(INTERNAL_OTA_PACKAGE_TARGET): .KATI_IMPLICIT_OUTPUTS := $(INTERNAL_OTA_METADATA)
-$(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_DIR) $(OTA_FROM_TARGET_FILES) $(INTERNAL_OTATOOLS_FILES)
+$(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_DIR) $(OTA_FROM_TARGET_FILES) $(INTERNAL_OTATOOLS_FILES) $(SOONG_KEYS_DIR_VALUE_FILE)
 	@echo "Package OTA: $@"
+	@# Removing the earlier package keeps the content of a hard link to it
+	rm -f $@
 	$(call build-ota-package-target,$@,-k $(KEY_CERT_PAIR) --output_metadata_path $(INTERNAL_OTA_METADATA))
 
 $(call declare-1p-container,$(INTERNAL_OTA_PACKAGE_TARGET),)
@@ -7305,7 +7373,7 @@ name := $(product_name)-partial-ota
 
 INTERNAL_OTA_PARTIAL_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 $(INTERNAL_OTA_PARTIAL_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
-$(INTERNAL_OTA_PARTIAL_PACKAGE_TARGET): $(BUILT_TARGET_FILES_DIR) $(OTA_FROM_TARGET_FILES) $(INTERNAL_OTATOOLS_FILES)
+$(INTERNAL_OTA_PARTIAL_PACKAGE_TARGET): $(BUILT_TARGET_FILES_DIR) $(OTA_FROM_TARGET_FILES) $(INTERNAL_OTATOOLS_FILES) $(SOONG_KEYS_DIR_VALUE_FILE)
 	@echo "Package partial OTA: $@"
 	$(call build-ota-package-target,$@,-k $(KEY_CERT_PAIR) --partial "$(BOARD_PARTIAL_OTA_UPDATE_PARTITIONS_LIST)")
 

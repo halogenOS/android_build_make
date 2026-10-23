@@ -532,8 +532,8 @@ python_binary_host {
     ],
 }
 
-python_binary_host {
-    name: "sign_target_files_apks",
+python_defaults {
+    name: "sign_target_files_apks_defaults",
     defaults: ["releasetools_binary_defaults"],
     srcs: [
         "sign_target_files_apks.py",
@@ -547,6 +547,18 @@ python_binary_host {
         "ota_utils_lib",
         "update_payload",
     ],
+}
+
+python_binary_host {
+    name: "sign_target_files_apks",
+    defaults: ["sign_target_files_apks_defaults"],
+}
+
+python_binary_host {
+    name: "set_release_tags",
+    defaults: ["sign_target_files_apks_defaults"],
+    srcs: ["set_release_tags.py"],
+    main: "set_release_tags.py",
 }
 
 python_binary_host {
@@ -600,6 +612,7 @@ python_defaults {
         "check_target_files_signatures.py",
         "make_recovery_patch.py",
         "ota_package_parser.py",
+        "set_release_tags.py",
         "sign_apex.py",
         "sign_target_files_apks.py",
         "validate_target_files.py",

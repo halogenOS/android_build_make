@@ -2943,6 +2943,12 @@ define extract-resources-jar
   $(ZIP2ZIP) -i $(2) -o $(1) -x '**/*.class' -x '**/*/'
 endef
 
+# $(1): a key file
+# Returns the key file in keys_dir for a key file of the default certificate
+# directory, and $(1) itself for a key file of any other directory. A step that
+# signs with it lists $(SOONG_KEYS_DIR_VALUE_FILE) as a prerequisite.
+keys-dir-key-file = $(or $(patsubst $(1):%,$(KEYS_DIR_FROM_FILE)/%,$(filter $(1):%,$(SOONG_KEYS_DIR_KEY_FILES))),$(1))
+
 # Sign a package using the specified key/cert.
 #
 define sign-package
@@ -2955,8 +2961,8 @@ $(hide) mv $(1) $(1).unsigned
 $(hide) $(JAVA) -Djava.library.path=$$(dirname $(SIGNAPK_JNI_LIBRARY_PATH)) -jar $(SIGNAPK_JAR) \
     $(if $(strip $(PRIVATE_CERTIFICATE_LINEAGE)), --lineage $(PRIVATE_CERTIFICATE_LINEAGE)) \
     $(if $(strip $(PRIVATE_ROTATION_MIN_SDK_VERSION)), --rotation-min-sdk-version $(PRIVATE_ROTATION_MIN_SDK_VERSION)) \
-    $(PRIVATE_CERTIFICATE) $(PRIVATE_PRIVATE_KEY) \
-    $(PRIVATE_ADDITIONAL_CERTIFICATES) $(1).unsigned $(1).signed
+    $(call keys-dir-key-file,$(PRIVATE_CERTIFICATE)) $(call keys-dir-key-file,$(PRIVATE_PRIVATE_KEY)) \
+    $(foreach key,$(PRIVATE_ADDITIONAL_CERTIFICATES),$(call keys-dir-key-file,$(key))) $(1).unsigned $(1).signed
 $(hide) mv $(1).signed $(1)
 endef
 
