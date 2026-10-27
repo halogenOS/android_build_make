@@ -1,0 +1,34 @@
+// SPDX-FileCopyrightText: The halogenOS Project
+// SPDX-License-Identifier: Apache-2.0
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+rust_defaults {
+    name: "compliance_metadata_import_defaults",
+    edition: "2021",
+    clippy_lints: "android",
+    lints: "android",
+    crate_root: "src/main.rs",
+    srcs: ["src/*.rs"],
+    use_expansive_default_srcs: false,
+    rustlibs: [
+        "libclap",
+        "librusqlite",
+        "libserde",
+        "libserde_json",
+        "libthiserror",
+    ],
+}
+
+rust_binary_host {
+    name: "compliance_metadata_import",
+    defaults: ["compliance_metadata_import_defaults"],
+}
+
+rust_test_host {
+    name: "compliance_metadata_import_test",
+    defaults: ["compliance_metadata_import_defaults"],
+    test_suites: ["general-tests"],
+}

@@ -12,6 +12,21 @@ json_list =$= $(call _json_list,$(space),$(1))
 # Converts a comma-separated list to a JSON list.
 csv_to_json_list =$= $(call _json_list,$(comma),$(1))
 
+# Returns the text without surrounding spaces as a JSON string with every
+# character escaped that JSON requires, or nothing for empty text.
+# $1: Text.
+json-string =$= $(if $(strip $(1)),$(KATI_json_quote $(strip $(1))))
+
+# Returns the words as a JSON array of strings escaped like json-string, or
+# nothing for no words.
+# $1: Words.
+json-strings =$= $(if $(strip $(1)),[$(KATI_foreach_sep w,$(comma),$(1),$(KATI_json_quote $(w)))])
+
+# Returns a comma and the member of a JSON object, or nothing for no value.
+# $1: Key name.
+# $2: JSON value, or nothing.
+json-member =$= $(if $(2),$(comma)"$(1)":$(2))
+
 # Adds or removes 4 spaces from _json_indent
 json_increase_indent =$= $(eval _json_indent := $$(_json_indent)$$(4space))
 json_decrease_indent =$= $(eval _json_indent := $$(subst _,$$(space),$$(patsubst %____,%,$$(subst $$(space),_,$$(_json_indent)))))

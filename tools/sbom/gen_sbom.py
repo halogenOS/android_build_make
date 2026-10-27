@@ -19,8 +19,10 @@ Generate the SBOM of the current target product in SPDX format.
 Usage example:
   gen_sbom.py --output_file out/soong/sbom/aosp_cf_x86_64_phone/sbom.spdx \
               --metadata out/soong/metadata/aosp_cf_x86_64_phone/metadata.db \
-              --product_out out/target/vsoc_x86_64
-              --soong_out out/soong
+              --out_dir out \
+              --product_out target/product/vsoc_x86_64 \
+              --soong_out soong \
+              --installed_files out/soong/compliance-metadata/aosp_cf_x86_64_phone/installed_files.txt \
               --build_version $(cat out/target/product/vsoc_x86_64/build_fingerprint.txt) \
               --product_mfr=Google
 """
@@ -136,14 +138,21 @@ def get_args():
   parser.add_argument('-d', '--debug', action='store_true', default=False, help='Debug mode')
   parser.add_argument('--output_file', required=True, help='The generated SBOM file in SPDX format.')
   parser.add_argument('--metadata', required=True, help='The metadata DB file path.')
-  parser.add_argument('--product_out', required=True, help='The path of PRODUCT_OUT, e.g. out/target/product/vsoc_x86_64.')
-  parser.add_argument('--soong_out', required=True, help='The path of Soong output directory, e.g. out/soong')
+  parser.add_argument('--out_dir', required=True, help='The output directory that the paths in the metadata DB are in, e.g. out.')
+  parser.add_argument('--product_out', required=True, help='The path of PRODUCT_OUT relative to --out_dir, e.g. target/product/vsoc_x86_64.')
+  parser.add_argument('--soong_out', required=True, help='The path of the Soong output directory relative to --out_dir, e.g. soong.')
   parser.add_argument('--build_version', required=True, help='The build version.')
   parser.add_argument('--product_mfr', required=True, help='The product manufacturer.')
   parser.add_argument('--json', action='store_true', default=False, help='Generated SBOM file in SPDX JSON format')
-  parser.add_argument('--unbundled_module', help='Module name, e.g. com.google.android.adbd, for which SBOM is generated')
+  files = parser.add_mutually_exclusive_group()
+  files.add_argument('--installed_files', help='The installed files of the product to hash, one path per line. Without it, each installed file is hashed at the path that the metadata DB records.')
+  files.add_argument('--unbundled_module', help='Module name, e.g. com.google.android.adbd, for which SBOM is generated')
 
-  return parser.parse_args()
+  args = parser.parse_args()
+  # The paths in the metadata DB are in --out_dir.
+  args.product_out_dir = os.path.join(args.out_dir, args.product_out)
+  args.soong_out_dir = os.path.join(args.out_dir, args.soong_out)
+  return args
 
 
 def log(*info):
@@ -572,7 +581,7 @@ def add_static_deps_of_file(file_id, file_metadata, doc):
     doc.add_relationship(sbom_data.Relationship(id1=file_id,
                                                 relationship=sbom_data.RelationshipType.STATIC_LINK,
                                                 id2=new_file_id(
-                                                    dep_file.removeprefix(args.soong_out + '/.intermediates/'))))
+                                                    dep_file.removeprefix(args.soong_out_dir + '/.intermediates/'))))
 
 
 def add_licenses_of_file(file_id, file_metadata, doc):
@@ -647,6 +656,24 @@ def get_license_of_product_copy_file(file_path):
 
   return ''
 
+def read_installed_files(list_file):
+  """Return a dict that maps the path in the metadata DB of each file in list_file to its path there.
+
+  list_file has one path per line, below --product_out in --out_dir or in another output directory.
+  """
+  installed_paths = {}
+  with open(list_file, encoding='utf-8') as f:
+    for line in f:
+      path = line.rstrip('\n')
+      if not path:
+        continue
+      _, found, below = path.partition('/' + args.product_out + '/')
+      if not found:
+        sys.exit(f'{list_file}: the installed file {path} is not below {args.product_out}.')
+      installed_paths[os.path.join(args.product_out_dir, below)] = path
+  return installed_paths
+
+
 def main():
   global args
   args = get_args()
@@ -705,6 +732,11 @@ def main():
   else:
     # Get installed files and corresponding make modules' metadata if an installed file is from a make module.
     installed_files_metadata = db.get_installed_files()
+  if args.installed_files:
+    installed_paths = read_installed_files(args.installed_files)
+    unlisted_files = [m['installed_file'] for m in installed_files_metadata if m['installed_file'] not in installed_paths]
+    if unlisted_files:
+      sys.exit(f'{args.installed_files} leaves out installed files of the metadata DB:\n  ' + '\n  '.join(unlisted_files))
 
   # Find which Soong module an installed file is from and merge metadata from Make and Soong
   for installed_file_metadata in installed_files_metadata:
@@ -731,7 +763,9 @@ def main():
     build_output_path = installed_file
     if args.unbundled_module:
       build_output_path = installed_file_metadata['build_output_path']
-    installed_file = installed_file.removeprefix(args.product_out)
+    elif args.installed_files:
+      build_output_path = installed_paths[installed_file]
+    installed_file = installed_file.removeprefix(args.product_out_dir)
 
     if not args.unbundled_module and not installed_file_has_metadata(installed_file_metadata, report):
       continue
@@ -804,7 +838,7 @@ def main():
   # Add all static library files to SBOM
   if include_static_deps:
     for dep_file in get_all_transitive_static_dep_files_of_installed_files(installed_files_metadata, db, report):
-      filepath = dep_file.removeprefix(args.soong_out + '/.intermediates/')
+      filepath = dep_file.removeprefix(args.soong_out_dir + '/.intermediates/')
       file_id = new_file_id(filepath)
       # SHA1 of empty string. Sometimes .a files might not be built.
       sha1 = 'SHA1: da39a3ee5e6b4b0d3255bfef95601890afd80709'

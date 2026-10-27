@@ -1,0 +1,1 @@
+{"columns":["installed_file","module_path","is_soong_module","is_prebuilt_make_module","product_copy_files","kernel_module_copy_files","is_platform_generated","static_libs","whole_static_libs","license_text"],"sort":["installed_file"]}

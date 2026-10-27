@@ -1779,101 +1779,14 @@ endif  # TARGET_BUILD_APPS
 metadata_list := $(OUT_DIR)/.module_paths/METADATA.list
 metadata_files := $(subst $(newline),$(space),$(file <$(metadata_list)))
 
-# Create metadata for compliance support in Soong
-.PHONY: make-compliance-metadata
-make-compliance-metadata: \
-    $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_metadata.csv \
-    $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_modules.csv
+# The modules that are defined in Make.
+_make_modules := $(strip $(foreach m,$(ALL_MODULES),$(if $(ALL_MODULES.$(m).IS_SOONG_MODULE),,$(m))))
 
+include $(BUILD_SYSTEM)/compliance_metadata.mk
 
-# Precompute these as an optimization to not do $(findstring).
-# Normally we would unset these to save memory, but we're almost at the end of the make
-# run, so don't bother.
-$(foreach f,$(INSTALLED_PRODUCT_SYSTEM_OTHER_AVBKEY_TARGET),\
-	$(eval _is_product_system_other_avbkey.$(f):=Y) \
-)
-$(foreach f,$(event_log_tags_file),\
-	$(eval _is_event_log_tags_file.$(f):=Y) \
-)
-$(foreach f,$(INSTALLED_SYSTEM_OTHER_ODEX_MARKER),\
-	$(eval _is_system_other_odex_marker.$(f):=Y) \
-)
-$(foreach f,$(ALL_KERNEL_MODULES_BLOCKLIST),\
-	$(eval _is_kernel_modules_blocklist.$(f):=Y) \
-)
-$(foreach f,$(ALL_FSVERITY_BUILD_MANIFEST_APK),\
-	$(eval _is_fsverity_build_manifest_apk.$(f):=Y) \
-)
-$(foreach f,$(SYSTEM_LINKER_CONFIG),\
-	$(eval _is_linker_config.$(f):=Y) \
-)
-$(foreach f,$(vendor_linker_config_file),\
-	$(eval _is_linker_config.$(f):=Y) \
-)
-$(foreach f,$(product_linker_config_file),\
-	$(eval _is_linker_config.$(f):=Y) \
-)
-$(foreach f,$(PARTITION_COMPAT_SYMLINKS),\
-	$(eval _is_partition_compat_symlink.$(f):=Y) \
-)
-$(foreach f,$(ALL_FLAGS_FILES),\
-	$(eval _is_flags_file.$(f):=Y) \
-)
-$(foreach f,$(ALL_ROOTDIR_SYMLINKS),\
-	$(eval _is_rootdir_symlink.$(f):=Y) \
-)
-$(foreach m,$(ALL_NON_MODULES),$(eval _is_non_module.$(m):=Y))
-
-$(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_metadata.csv:
-	rm -f $@
-	echo 'installed_file,module_path,is_soong_module,is_prebuilt_make_module,product_copy_files,kernel_module_copy_files,is_platform_generated,static_libs,whole_static_libs,license_text' >> $@
-	$(foreach f,$(installed_files),\
-	  $(eval _module_name := $(ALL_INSTALLED_FILES.$f)) \
-	  $(eval _path_on_device := $(patsubst $(PRODUCT_OUT)/%,%,$f)) \
-	  $(eval _build_output_path := $(PRODUCT_OUT)/$(_path_on_device)) \
-	  $(eval _module_path := $(sort $(ALL_MODULES.$(_module_name).PATH))) \
-	  $(eval _is_soong_module := $(ALL_MODULES.$(_module_name).IS_SOONG_MODULE)) \
-	  $(eval _is_prebuilt_make_module := $(ALL_MODULES.$(_module_name).IS_PREBUILT_MAKE_MODULE)) \
-	  $(eval _product_copy_files := $(sort $(filter %:$(_path_on_device),$(product_copy_files_without_owner)))) \
-	  $(eval _kernel_module_copy_files := $(sort $(filter %$(_path_on_device),$(KERNEL_MODULE_COPY_FILES)))) \
-	  $(eval _is_build_prop := $(call is-build-prop,$f)) \
-	  $(eval _is_product_system_other_avbkey := $(_is_product_system_other_avbkey.$(f))) \
-	  $(eval _is_event_log_tags_file := $(_is_event_log_tags_file.$(f))) \
-	  $(eval _is_system_other_odex_marker := $(_is_system_other_odex_marker.$(f))) \
-	  $(eval _is_kernel_modules_blocklist := $(_is_kernel_modules_blocklist.$(f))) \
-	  $(eval _is_fsverity_build_manifest_apk := $(_is_fsverity_build_manifest_apk.$(f))) \
-	  $(eval _is_linker_config := $(_is_linker_config.$(f))) \
-	  $(eval _is_partition_compat_symlink := $(_is_partition_compat_symlink.$(f))) \
-	  $(eval _is_flags_file := $(_is_flags_file.$(f))) \
-	  $(eval _is_rootdir_symlink := $(_is_rootdir_symlink.$(f))) \
-	  $(eval _is_platform_generated := $(if $(_is_soong_module),,$(_is_build_prop)$(_is_product_system_other_avbkey)$(_is_event_log_tags_file)$(_is_system_other_odex_marker)$(_is_kernel_modules_blocklist)$(_is_fsverity_build_manifest_apk)$(_is_linker_config)$(_is_partition_compat_symlink)$(_is_flags_file)$(_is_rootdir_symlink))) \
-	  $(eval _static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.STATIC_LIBRARIES))) \
-	  $(eval _whole_static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.WHOLE_STATIC_LIBRARIES))) \
-	  $(eval _license_text := $(if $(_is_non_module.$(_build_output_path)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES),\
-	                          $(if $(_is_partition_compat_symlink),build/soong/licenses/LICENSE,$(ALL_MODULES.$(_module_name).NOTICES)))) \
-	  echo '$(_build_output_path),$(_module_path),$(_is_soong_module),$(_is_prebuilt_make_module),$(_product_copy_files),$(_kernel_module_copy_files),$(_is_platform_generated),$(_static_libs),$(_whole_static_libs),$(_license_text)' >> $@; \
-	)
-
-$(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_modules.csv:
-	rm -f $@
-	echo 'name,module_path,module_class,module_type,static_libs,whole_static_libs,built_files,installed_files' >> $@
-	$(foreach m,$(ALL_MODULES), \
-	  $(eval _module_name := $m) \
-	  $(eval _module_path := $(sort $(ALL_MODULES.$(_module_name).PATH))) \
-	  $(eval _make_module_class := $(ALL_MODULES.$(_module_name).CLASS)) \
-	  $(eval _make_module_type := $(ALL_MODULES.$(_module_name).MAKE_MODULE_TYPE)) \
-	  $(eval _static_libs := $(sort $(ALL_MODULES.$(_module_name).STATIC_LIBS))) \
-	  $(eval _whole_static_libs := $(sort $(ALL_MODULES.$(_module_name).WHOLE_STATIC_LIBS))) \
-	  $(eval _built_files := $(sort $(ALL_MODULES.$(_module_name).BUILT))) \
-	  $(eval _installed_files := $(sort $(ALL_MODULES.$(_module_name).INSTALLED))) \
-	  $(eval _is_soong_module := $(ALL_MODULES.$(_module_name).IS_SOONG_MODULE)) \
-	  $(if $(_is_soong_module),, \
-		echo '$(_module_name),$(_module_path),$(_make_module_class),$(_make_module_type),$(_static_libs),$(_whole_static_libs),$(_built_files),$(_installed_files)' >> $@; \
-	  ) \
-	)
-
-$(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/installed_files.stamp: $(installed_files)
-	touch $@
+# The installed files of the product for gen_sbom, one path per line.
+$(SOONG_SBOM_INSTALLED_FILES_LIST): $(installed_files)
+	printf '%s\n' $^ >$@
 
 # -----------------------------------------------------------------
 # ==============================================================================
@@ -1908,8 +1821,6 @@ define add-make-module-to-json
 endef
 
 # Preparing make module json content.
-_make_modules := $(strip $(foreach m,$(ALL_MODULES),$(if $(ALL_MODULES.$(m).IS_SOONG_MODULE),,$(m))))
-
 _json_contents := [$(newline)
 _json_indent := $(4space)
 

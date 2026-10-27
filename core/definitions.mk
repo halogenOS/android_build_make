@@ -1273,6 +1273,66 @@ define append-path
 $(subst //,/,$(1)/$(2))
 endef
 
+###########################################################
+## Paths in files of JSON lines. A path is written as the
+## name of its root and the path below it. The roots are out
+## for OUT_DIR and src for the source tree, so a file is the
+## same in every output directory.
+###########################################################
+
+# $(1): paths
+# Returns the paths below each root, relative to it.
+json-root-paths.out = $(patsubst $(OUT_DIR)/%,%,$(filter $(OUT_DIR)/%,$(1)))
+json-root-paths.src = $(foreach p,$(filter-out $(OUT_DIR)/%,$(1)),\
+  $(if $(filter /%,$(p)),$(error $(p) is neither in $(OUT_DIR) nor in the source tree),$(p)))
+
+# $(1): paths in OUT_DIR or in the source tree
+# Returns a JSON object that maps each root to the array of the paths below it,
+# in the order of $(1), or nothing for no paths.
+json-paths = $(if $(strip $(1)),{$(KATI_foreach_sep r,$(comma),$(foreach r,out src,$(if $(call json-root-paths.$(r),$(1)),$(r))),"$(r)":$(call json-strings,$(call json-root-paths.$(r),$(1))))})
+
+# $(1): a file of JSON lines
+# $(2): a JSON value built from json-paths and the functions of json.mk, which
+#       may span lines
+# Appends the value to the file as one line. These functions write no newline,
+# and a JSON string escapes it, so the lines are joined without a separator.
+write-json-line = $(KATI_file_stream $(1),$(subst $(newline),,$(2)))
+
+ifeq ($(TEST_MAKE_json_values),true)
+  # $(1): the name of the test
+  # $(2): the value returned by the function
+  # $(3): the expected value
+  define my_test
+    $(if $(call streq,$(2),$(3)),,
+      $(eval my_failed := true)
+      $(warning JSON test $(1): expected '$(3)', got '$(2)'))
+  endef
+  my_failed :=
+
+  my_paths := $(OUT_DIR)/a c/d $(OUT_DIR)/e
+  my_expected := {"out":["a","e"],"src":["c/d"]}
+  $(call my_test,json-paths of every root,$(call json-paths,$(my_paths)),$(my_expected))
+  my_expected := {"src":["c/d"]}
+  $(call my_test,json-paths of one root,$(call json-paths,c/d),$(my_expected))
+  $(call my_test,json-paths of no paths,$(call json-paths, ),)
+
+  my_expected := ["a","b\"c"]
+  $(call my_test,json-strings of two words,$(call json-strings,a b"c),$(my_expected))
+  $(call my_test,json-strings of no words,$(call json-strings, ),)
+  $(call my_test,json-string,$(call json-string, a b ),"a b")
+  $(call my_test,json-string of empty text,$(call json-string, ),)
+
+  my_expected := $(comma)"k":"v"
+  $(call my_test,json-member,$(call json-member,k,"v"),$(my_expected))
+  $(call my_test,json-member of no value,$(call json-member,k,),)
+
+  my_paths :=
+  my_expected :=
+  ifdef my_failed
+    $(error failed JSON test)
+  endif
+endif
+
 
 ###########################################################
 ## Color-coded warnings and errors
