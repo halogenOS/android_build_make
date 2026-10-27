@@ -1705,7 +1705,7 @@ class InstallRecoveryScriptFormatTest(test_utils.ReleaseToolsTestCase):
     fake_fstab = [
         "/dev/soc.0/by-name/boot /boot emmc defaults defaults",
         "/dev/soc.0/by-name/recovery /recovery emmc defaults defaults"]
-    self._info["fstab"] = common.LoadRecoveryFSTab("\n".join, 2, fake_fstab)
+    self._info["fstab"] = common.LoadRecoveryFSTab("\n".join, 2, fake_fstab, {})
     # Construct the gzipped recovery.img and boot.img
     self.recovery_data = bytearray([
         0x1f, 0x8b, 0x08, 0x00, 0x81, 0x11, 0x02, 0x5a, 0x00, 0x03, 0x2b, 0x4a,

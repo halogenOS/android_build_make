@@ -749,10 +749,6 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
 
   # Tuple layout: (readonly, specific prop, general prop)
   fmt_props = (
-      # Generic first, then specific file type.
-      (False, "fs_type", "fs_type"),
-      (False, "{}_fs_type", "fs_type"),
-
       # Ordering for these doesn't matter.
       (False, "{}_selinux_fc", "selinux_fc"),
       (False, "{}_size", "partition_size"),
@@ -780,20 +776,15 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
   )
 
   # Translate prefixed properties into generic ones.
-  if mount_point == "data":
-    prefix = "userdata"
-  else:
-    prefix = mount_point
+  prefix = common.PartitionForMountPoint("/" + mount_point)
+
+  fs_type = common.PartitionFsType(glob_dict, prefix)
+  if fs_type is not None:
+    d["fs_type"] = str(fs_type)
 
   for readonly, src_prop, dest_prop in fmt_props:
     if readonly and mount_point not in ro_mount_points:
       continue
-
-    if src_prop == "fs_type":
-      # This property is legacy and only used on a few partitions. b/202600377
-      allowed_partitions = set(["system", "system_other", "data", "oem"])
-      if mount_point not in allowed_partitions:
-        continue
 
     if (mount_point == "system_other") and (dest_prop != "partition_size"):
       # Propagate system properties to system_other. They'll get overridden

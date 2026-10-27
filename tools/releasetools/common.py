@@ -1196,7 +1196,54 @@ class PartitionBuildProps(object):
     return self.build_props.get(prop)
 
 
-def LoadRecoveryFSTab(read_helper, fstab_version, recovery_fstab_path):
+def PartitionForMountPoint(mount_point):
+  """Returns the name of the partition mounted at mount_point, as used in the
+  keys of misc_info.txt."""
+  return {"/": "system", "/data": "userdata"}.get(
+      mount_point, mount_point.lstrip("/"))
+
+
+def PartitionFsType(info_dict, partition):
+  """Returns the file system type of the image built for partition, or None
+  when misc_info.txt does not set one."""
+  fs_type = None
+  # The generic fs_type is legacy and used only for these partitions.
+  # b/202600377
+  if partition in ("system", "system_other", "userdata", "oem"):
+    fs_type = info_dict.get("fs_type")
+  if partition == "system_other":
+    fs_type = info_dict.get("system_fs_type", fs_type)
+  return info_dict.get(partition + "_fs_type", fs_type)
+
+
+def LoadRecoveryFSTab(read_helper, fstab_version, recovery_fstab_path,
+                      info_dict):
+  """Returns one entry for each mount point of the fstab. A mount point with
+  several entries uses the one whose type is the file system of the image built
+  for its partition."""
+  entries = _ReadRecoveryFstabEntries(
+      read_helper, fstab_version, recovery_fstab_path)
+  return {mount_point: _PickFstabEntry(mount_point, candidates, info_dict)
+          for mount_point, candidates in entries.items()}
+
+
+def _PickFstabEntry(mount_point, candidates, info_dict):
+  if len(candidates) == 1:
+    return candidates[0]
+  fs_type = PartitionFsType(info_dict, PartitionForMountPoint(mount_point))
+  match = next((p for p in candidates if p.fs_type == fs_type), None)
+  if match:
+    return match
+  logger.warning(
+      "None of the %d fstab entries for %s has the file system type of its "
+      "image (%s), using the first entry (%s)", len(candidates), mount_point,
+      fs_type or "not set", candidates[0].fs_type)
+  return candidates[0]
+
+
+def _ReadRecoveryFstabEntries(read_helper, fstab_version, recovery_fstab_path):
+  """Returns every entry of the fstab, grouped by mount point in the order of
+  the file."""
   class Partition(object):
     def __init__(self, mount_point, fs_type, device, length, context, slotselect):
       self.mount_point = mount_point
@@ -1214,7 +1261,7 @@ def LoadRecoveryFSTab(read_helper, fstab_version, recovery_fstab_path):
 
   assert fstab_version == 2
 
-  d = {}
+  entries = collections.defaultdict(list)
   for line in data.split("\n"):
     line = line.strip()
     if not line or line.startswith("#"):
@@ -1251,11 +1298,11 @@ def LoadRecoveryFSTab(read_helper, fstab_version, recovery_fstab_path):
         context = i
 
     mount_point = pieces[1]
-    d[mount_point] = Partition(mount_point=mount_point, fs_type=pieces[2],
-                               device=pieces[0], length=length, context=context,
-                               slotselect=slotselect)
+    entries[mount_point].append(
+        Partition(mount_point=mount_point, fs_type=pieces[2], device=pieces[0],
+                  length=length, context=context, slotselect=slotselect))
 
-  return d
+  return entries
 
 
 def _FindAndLoadRecoveryFstab(info_dict, input_file, read_helper):
@@ -1275,14 +1322,16 @@ def _FindAndLoadRecoveryFstab(info_dict, input_file, read_helper):
     if not DoesInputFileContain(input_file, recovery_fstab_path):
       recovery_fstab_path = 'RECOVERY/RAMDISK/etc/recovery.fstab'
     return LoadRecoveryFSTab(
-        read_helper, info_dict['fstab_version'], recovery_fstab_path)
+        read_helper, info_dict['fstab_version'], recovery_fstab_path,
+        info_dict)
 
   if info_dict.get('recovery_as_boot') == 'true':
     recovery_fstab_path = 'BOOT/RAMDISK/system/etc/recovery.fstab'
     if not DoesInputFileContain(input_file, recovery_fstab_path):
       recovery_fstab_path = 'BOOT/RAMDISK/etc/recovery.fstab'
     return LoadRecoveryFSTab(
-        read_helper, info_dict['fstab_version'], recovery_fstab_path)
+        read_helper, info_dict['fstab_version'], recovery_fstab_path,
+        info_dict)
 
   return None
 
