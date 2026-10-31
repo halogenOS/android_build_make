@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+$(call inherit-product, product/custom/config/media_product.mk)
+
 # This makefile contains the product partition contents for
 # media-capable devices (non-wearables). Only add something here
 # if it definitely doesn't belong on wearables. Otherwise, choose
