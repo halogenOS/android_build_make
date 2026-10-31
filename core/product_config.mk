@@ -268,6 +268,11 @@ INTERNAL_PRODUCT := $(current_product_makefile)
 # Strip and assign the PRODUCT_ variables.
 $(call strip-product-vars)
 
+# These files run after the product variables are stripped, so they may only append to PRODUCT_*
+# variables, and inherit-product has no effect there.
+$(foreach c,$(subst $(comma),$(space),$(PRODUCT_CHARACTERISTICS)),\
+  $(eval -include product/custom/characteristics/$(c).mk))
+
 # Quick check
 $(check-current-product)
 
