@@ -68,15 +68,15 @@ define generate-common-build-props
             echo "ro.$(1).product.cpu.abilist64=$(TARGET_CPU_ABI_LIST_64_BIT)" >> $(2);\
         )\
     )\
-    echo "ro.$(1).build.date=`$(DATE_FROM_FILE)`" >> $(2);\
-    echo "ro.$(1).build.date.utc=`$(DATE_FROM_FILE) +%s`" >> $(2);\
+    echo "ro.$(1).build.date=$(BUILD_DATE_TEXT_FROM_FILE)" >> $(2);\
+    echo "ro.$(1).build.date.utc=$(BUILD_DATE_UNIX_TIME_FROM_FILE)" >> $(2);\
     echo "ro.$(1).build.fingerprint?=$${BuildFingerprint:-$(BUILD_FINGERPRINT_FROM_FILE)}" >> $(2);\
     echo "ro.$(1).build.id?=$(BUILD_ID)" >> $(2);\
     echo "ro.$(1).build.uuid?=$(BUILD_UUID_FROM_FILE)" >> $(2);\
     echo "ro.$(1).build.tags?=$(BUILD_VERSION_TAGS)" >> $(2);\
     echo "ro.$(1).build.type=$(TARGET_BUILD_VARIANT)" >> $(2);\
     if [[ $(BUILD_NUMBER_FROM_FILE) =~ ^eng\. ]]; then \
-        echo "ro.$(1).build.version.incremental=`$(DATE_FROM_FILE) +%s`" >> $(2);\
+        echo "ro.$(1).build.version.incremental=$(BUILD_DATE_UNIX_TIME_FROM_FILE)" >> $(2);\
     else \
         echo "ro.$(1).build.version.incremental=$(BUILD_NUMBER_FROM_FILE)" >> $(2);\
     fi; \
@@ -121,7 +121,8 @@ $(if $(filter true,$(BUILD_BROKEN_DUP_SYSPROP)),\
     $(eval _option := --allow-dup)\
 )
 
-$(2): $(POST_PROCESS_PROPS) $(INTERNAL_BUILD_ID_MAKEFILE) $(3) $(6) $(BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC)
+$(2): $(POST_PROCESS_PROPS) $(INTERNAL_BUILD_ID_MAKEFILE) $(3) $(6) $(BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC) \
+    $(SOONG_BUILD_DATE_TEXT_FILE) $(SOONG_BUILD_DATE_UNIX_TIME_FILE)
 	$(hide) echo Building $$@
 	$(hide) mkdir -p $$(dir $$@)
 	$(hide) rm -f $$@ && touch $$@

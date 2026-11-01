@@ -48,8 +48,12 @@ $(KATI_obsolete_var FILE_NAME_TAG,https://android.googlesource.com/platform/buil
 .KATI_RESTAT: $(BUILD_NUMBER_FILE)
 .KATI_RESTAT: $(BUILD_HOSTNAME_FILE)
 
-DATE_FROM_FILE := date -d @$(BUILD_DATETIME_FROM_FILE)
-.KATI_READONLY := DATE_FROM_FILE
+# The build date in UTC, as text and as Unix time. Soong writes both files from the build_date
+# Ninja variable.
+BUILD_DATE_TEXT_FROM_FILE := $$(cat $(SOONG_BUILD_DATE_TEXT_FILE))
+BUILD_DATE_UNIX_TIME_FROM_FILE := $$(cat $(SOONG_BUILD_DATE_UNIX_TIME_FILE))
+.KATI_READONLY := BUILD_DATE_TEXT_FROM_FILE BUILD_DATE_UNIX_TIME_FROM_FILE
+$(KATI_obsolete_var DATE_FROM_FILE,Use BUILD_DATE_TEXT_FROM_FILE or BUILD_DATE_UNIX_TIME_FROM_FILE)
 
 # keys_dir contains the keys of every step that signs: links to the test keys
 # in a regular build, the release keys in a signing build. Kati cannot write a
