@@ -122,7 +122,7 @@ def main(argv):
     cmd.append("--new_partitions=" + ":".join(args.images))
     cmd.append("--out_file=" + unsigned_payload.name)
     cmd.append("--is_partial_update")
-    if args.max_timestamp:
+    if args.max_timestamp is not None:
       cmd.append("--max_timestamp=" + str(args.max_timestamp))
       cmd.append("--partition_timestamps=boot:" + str(args.max_timestamp))
     logger.info("Running %s", cmd)

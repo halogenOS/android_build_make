@@ -53,6 +53,12 @@ $(KATI_obsolete_var FILE_NAME_TAG,https://android.googlesource.com/platform/buil
 BUILD_DATE_TEXT_FROM_FILE := $$(cat $(SOONG_BUILD_DATE_TEXT_FILE))
 BUILD_DATE_UNIX_TIME_FROM_FILE := $$(cat $(SOONG_BUILD_DATE_UNIX_TIME_FILE))
 .KATI_READONLY := BUILD_DATE_TEXT_FROM_FILE BUILD_DATE_UNIX_TIME_FROM_FILE
+
+# The AVB salt of images, computed from the build number and the build date. Builds from the same
+# inputs get the same salt, and the salt changes with every release. Rules that use it depend on
+# $(SOONG_BUILD_DATE_UNIX_TIME_FILE).
+AVB_SALT_FROM_BUILD := $$(sha256sum $(BUILD_NUMBER_FILE) $(SOONG_BUILD_DATE_UNIX_TIME_FILE) | cut -d " " -f 1 | tr -d '\n')
+.KATI_READONLY := AVB_SALT_FROM_BUILD
 $(KATI_obsolete_var DATE_FROM_FILE,Use BUILD_DATE_TEXT_FROM_FILE or BUILD_DATE_UNIX_TIME_FROM_FILE)
 
 # keys_dir contains the keys of every step that signs: links to the test keys
