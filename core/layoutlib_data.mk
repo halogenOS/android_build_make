@@ -75,8 +75,13 @@ $(call dist-for-goals,layoutlib,$(LAYOUTLIB_BUILD_PROP)/layoutlib-build.prop:lay
 
 # Resource files from frameworks/base/core/res/res
 LAYOUTLIB_RES := $(call intermediates-dir-for,PACKAGING,layoutlib-res,HOST,COMMON)
-LAYOUTLIB_RES_FILES := $(shell find frameworks/base/core/res/res -type f -not -path 'frameworks/base/core/res/res/values-m[nc]c*' | sort)
-EMULATED_OVERLAYS_FILES := $(shell find frameworks/base/packages/overlays/*/res/ | sort)
+# The find commands are written in the form that the find emulator of Kati
+# runs, so the check of the Kati stamp only looks at the directories they read
+# instead of running them again on every build.
+LAYOUTLIB_RES_FILES := $(sort $(filter-out \
+  frameworks/base/core/res/res/values-mcc% frameworks/base/core/res/res/values-mnc%, \
+  $(shell find frameworks/base/core/res/res -type f)))
+EMULATED_OVERLAYS_FILES := $(sort $(shell find frameworks/base/packages/overlays/*/res/))
 LAYOUTLIB_DEVICE_OVERLAYS_FILES :=
 $(LAYOUTLIB_RES)/layoutlib-res.zip: $(SOONG_ZIP) $(HOST_OUT_EXECUTABLES)/aapt2 $(LAYOUTLIB_RES_FILES) $(EMULATED_OVERLAYS_FILES) $(LAYOUTLIB_DEVICE_OVERLAYS_FILES) frameworks/layoutlib/overlay_codenames.txt
 	rm -rf $@
