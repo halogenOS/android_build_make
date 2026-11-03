@@ -902,23 +902,40 @@ endif
 # -------------------------------------------------------------------
 # Handle exported/imported includes
 
-# Recursively calculate flags
-$(foreach export,$(EXPORTS_LIST), \
-  $(eval EXPORTS.$$(export) = $$(EXPORTS.$(export).FLAGS) \
-    $(foreach dep,$(EXPORTS.$(export).REEXPORT),$$(EXPORTS.$(dep)))))
+ifndef SOONG_EXPORTS_MK
+  $(error SOONG_EXPORTS_MK is not set. Pass the path of the exports file of Soong to Kati, as soong_ui does)
+endif
 
-# Recursively calculate dependencies
-$(foreach export,$(EXPORTS_LIST), \
-  $(eval EXPORT_DEPS.$$(export) = $$(EXPORTS.$(export).DEPS) \
-    $(foreach dep,$(EXPORTS.$(export).REEXPORT),$$(EXPORT_DEPS.$(dep)))))
+# Only the compile rules of the objects in USERS read the exports. Without any
+# USERS, Kati does not resolve the exports and does not read the export lists of
+# Soong.
+ifneq ($(strip $(foreach export,$(EXPORTS_LIST),$(EXPORTS.$(export).USERS))),)
+  include $(SOONG_EXPORTS_MK)
+  # Only Soong libraries set FLAGS_LIST and DEPS_LIST, to the numbers of their lists
+  $(foreach export,$(EXPORTS_LIST), \
+    $(if $(EXPORTS.$(export).FLAGS_LIST), \
+      $(eval EXPORTS.$$(export).FLAGS := $$(SOONG_EXPORT_CFLAGS.$$(EXPORTS.$$(export).FLAGS_LIST)))) \
+    $(if $(EXPORTS.$(export).DEPS_LIST), \
+      $(eval EXPORTS.$$(export).DEPS := $$(SOONG_EXPORT_C_INCLUDE_DEPS.$$(EXPORTS.$$(export).DEPS_LIST)))))
 
-# Converts the recursive variables to simple variables so that we don't have to
-# evaluate them for every .o rule
-$(foreach export,$(EXPORTS_LIST),$(eval EXPORTS.$$(export) := $$(strip $$(EXPORTS.$$(export)))))
-$(foreach export,$(EXPORTS_LIST),$(eval EXPORT_DEPS.$$(export) := $$(sort $$(EXPORT_DEPS.$$(export)))))
+  # Recursively calculate flags
+  $(foreach export,$(EXPORTS_LIST), \
+    $(eval EXPORTS.$$(export) = $$(EXPORTS.$(export).FLAGS) \
+      $(foreach dep,$(EXPORTS.$(export).REEXPORT),$$(EXPORTS.$(dep)))))
 
-# Add dependencies
-$(foreach export,$(EXPORTS_LIST),$(eval $(call add-dependency,$$(EXPORTS.$$(export).USERS),$$(EXPORT_DEPS.$$(export)))))
+  # Recursively calculate dependencies
+  $(foreach export,$(EXPORTS_LIST), \
+    $(eval EXPORT_DEPS.$$(export) = $$(EXPORTS.$(export).DEPS) \
+      $(foreach dep,$(EXPORTS.$(export).REEXPORT),$$(EXPORT_DEPS.$(dep)))))
+
+  # Converts the recursive variables to simple variables so that we don't have to
+  # evaluate them for every .o rule
+  $(foreach export,$(EXPORTS_LIST),$(eval EXPORTS.$$(export) := $$(strip $$(EXPORTS.$$(export)))))
+  $(foreach export,$(EXPORTS_LIST),$(eval EXPORT_DEPS.$$(export) := $$(sort $$(EXPORT_DEPS.$$(export)))))
+
+  # Add dependencies
+  $(foreach export,$(EXPORTS_LIST),$(eval $(call add-dependency,$$(EXPORTS.$$(export).USERS),$$(EXPORT_DEPS.$$(export)))))
+endif
 
 # -------------------------------------------------------------------
 # Figure out our module sets.

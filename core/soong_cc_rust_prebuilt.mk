@@ -9,6 +9,10 @@ ifneq ($(LOCAL_MODULE_MAKEFILE),$(SOONG_ANDROID_MK))
   $(call pretty-error,soong_cc_rust_prebuilt.mk may only be used from Soong)
 endif
 
+ifneq ($(LOCAL_EXPORT_CFLAGS)$(LOCAL_EXPORT_C_INCLUDE_DEPS),)
+  $(call pretty-error,Soong modules set export lists by number in LOCAL_EXPORT_CFLAGS_LIST and LOCAL_EXPORT_C_INCLUDE_DEPS_LIST and not in full in LOCAL_EXPORT_CFLAGS or LOCAL_EXPORT_C_INCLUDE_DEPS)
+endif
+
 ifdef LOCAL_IS_HOST_MODULE
   ifneq ($(HOST_OS),$(LOCAL_MODULE_HOST_OS))
     my_prefix := HOST_CROSS_
@@ -66,9 +70,10 @@ include $(BUILD_SYSTEM)/base_rules.mk
 
 ifneq ($(filter STATIC_LIBRARIES SHARED_LIBRARIES RLIB_LIBRARIES DYLIB_LIBRARIES HEADER_LIBRARIES,$(LOCAL_MODULE_CLASS)),)
   # Soong module is a static or shared library
+  # main.mk sets FLAGS and DEPS from the numbered lists of $(SOONG_EXPORTS_MK)
   EXPORTS_LIST += $(intermediates)
-  EXPORTS.$(intermediates).FLAGS := $(LOCAL_EXPORT_CFLAGS)
-  EXPORTS.$(intermediates).DEPS := $(LOCAL_EXPORT_C_INCLUDE_DEPS)
+  EXPORTS.$(intermediates).FLAGS_LIST := $(LOCAL_EXPORT_CFLAGS_LIST)
+  EXPORTS.$(intermediates).DEPS_LIST := $(LOCAL_EXPORT_C_INCLUDE_DEPS_LIST)
 
   ifdef LOCAL_SOONG_TOC
     $(eval $(call copy-one-file,$(LOCAL_SOONG_TOC),$(LOCAL_BUILT_MODULE).toc))
